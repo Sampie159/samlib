@@ -12,6 +12,8 @@
 #define for_eachr(arr) for (i64 i = len(arr) - 1; i >= 0; i--)
 
 typedef char * string;
+#else
+#define restrict __restrict
 #endif
 
 typedef char u8; // I don't know if char will actually be unsigned, but for the sake of clarity I chose `u8`
