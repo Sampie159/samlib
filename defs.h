@@ -1,12 +1,21 @@
 #pragma once
 
-#define UNIMPLEMENTED() fprintf(stderr, "\033[1m[TODO] \033[0m%s is unimplemented!\n", __FUNCTION__)
+#ifndef NDEBUG
 #define TODO(format, ...) fprintf(stderr, "\033[1m[TODO] \033[0m" format __VA_OPT__(,) __VA_ARGS__)
 #define WARN(format, ...) fprintf(stderr, "\033[1;33m[WARNING] \033[0m" format __VA_OPT__(,) __VA_ARGS__)
-#define ERROR(format, ...)											\
-	fprintf(stderr, "\033[1;31m[ERROR] \033[0m" format __VA_OPT__(,) __VA_ARGS__);	\
-	exit(EXIT_FAILURE)
+#define ERROR(format, ...) fprintf(stderr, "\033[1;31m[ERROR] \033[0m" format __VA_OPT__(,) __VA_ARGS__)
 #define OK(format, ...) fprintf(stderr, "\033[1;32m[OK] \033[0m" format __VA_OPT__(,) __VA_ARGS__)
+#else
+#define TODO(format, ...)
+#define WARN(format, ...)
+#define ERROR(format, ...)
+#define OK(format, ...)
+#endif
+
+#define UNIMPLEMENTED() fprintf(stderr, "\033[1m[TODO] \033[0m%s is unimplemented!\n", __FUNCTION__)
+#define PANIC(format, ...)                                                          \
+	fprintf(stderr, "\033[1;31m[PANIC] \033[0m" format __VA_OPT__(,) __VA_ARGS__);	\
+	exit(EXIT_FAILURE)
 
 #define global        static
 #define internal      static
