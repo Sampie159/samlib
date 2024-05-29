@@ -1,13 +1,15 @@
 #ifndef _159_ARENA_H_
 #define _159_ARENA_H_
 
+#include <math.h>
 #include <stdlib.h>
 
-#define DEFAULT_GROWING_SIZE (1024 * 1024)
 const unsigned long BYTE     = 1;
 const unsigned long KILOBYTE = 1024 * BYTE;
 const unsigned long MEGABYTE = 1024 * KILOBYTE;
 const unsigned long GIGABYTE = 1024 * MEGABYTE;
+
+#define DEFAULT_GROWING_SIZE MEGABYTE
 
 typedef enum {
     NONE,
@@ -25,6 +27,7 @@ typedef struct growing_buffer {
     void *buffer;
     struct growing_buffer *next;
     unsigned long pos;
+    unsigned long size;
 } Growing_Buffer;
 
 typedef struct {
@@ -50,6 +53,16 @@ void arena_init_growing(Arena *a) {
     a->gb.buffer = malloc(DEFAULT_GROWING_SIZE);
     a->gb.pos = 0;
     a->gb.next = NULL;
+    a->gb.size = DEFAULT_GROWING_SIZE;
+}
+
+// Initializes a new `Arena` that utilizes a Linked List structure with size `size`.
+void arena_init_growing2(Arena *a, unsigned long size) {
+    a->buffer_type = GROWING_BUFFER;
+    a->gb.buffer = malloc(size);
+    a->gb.pos = 0;
+    a->gb.next = NULL;
+    a->gb.size = size;
 }
 
 // Frees all the memory allocated by a `Growing_Buffer`, basically a no op for a `Stack_Buffer`.
@@ -86,15 +99,19 @@ void *arena_alloc(Arena *a, unsigned long size) {
         {
             Growing_Buffer *aux = &a->gb;
             while (1) {
-                if (aux->pos + size > DEFAULT_GROWING_SIZE) {
+                if (aux->pos + size > a->gb.size) {
                     if (aux->next) {
                         aux = aux->next;
                         continue;
                     }
+                    
+                    const unsigned long size_to_grow = (unsigned long)ceil((double)size / a->gb.size) * a->gb.size;
+
                     aux->next = (Growing_Buffer *)malloc(sizeof(Growing_Buffer));
                     aux = aux->next;
-                    aux->buffer = malloc(DEFAULT_GROWING_SIZE);
+                    aux->buffer = malloc(size_to_grow);
                     aux->pos = size;
+                    aux->size = size_to_grow;
                     aux->next = NULL;
                     ret = aux->buffer;
                     break;
