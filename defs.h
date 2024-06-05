@@ -1,5 +1,8 @@
 #pragma once
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #ifndef NDEBUG
 #define TODO(format, ...) fprintf(stderr, "\033[1m[TODO] \033[0m" format __VA_OPT__(,) __VA_ARGS__)
 #define WARN(format, ...) fprintf(stderr, "\033[1;33m[WARNING] \033[0m" format __VA_OPT__(,) __VA_ARGS__)
@@ -34,11 +37,11 @@
 #endif
 
 #ifndef __cplusplus
-#define len(arr) sizeof(arr)/sizeof(arr[0])
+#define LEN(arr) sizeof(arr)/sizeof(arr[0])
 #define for_each(arr) for (u64 i = 0; i < len(arr); i++)
 #define for_eachr(arr) for (i64 i = len(arr) - 1; i >= 0; i--)
-#define min(X, Y) ((X) < (Y) ? (X) : (Y))
-#define max(X, Y) ((X) > (Y) ? (X) : (Y))
+#define MIN(X, Y) ((X) < (Y) ? (X) : (Y))
+#define MAX(X, Y) ((X) > (Y) ? (X) : (Y))
 
 #if !(__STDC_VERSION__ > 201710)
 #define true  1
