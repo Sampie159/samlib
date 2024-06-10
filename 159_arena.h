@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 
 const unsigned long BYTE     = 1;
 const unsigned long KILOBYTE = 1024 * BYTE;
@@ -67,21 +68,51 @@ void arena_init_growing2(Arena *a, unsigned long size) {
 
 // Frees all the memory allocated by a `Growing_Buffer`, basically a no op for a `Stack_Buffer`.
 // Makes the `Arena` unusable in either case, until another `arena_init`.
-void arena_deinit(Arena *a) {
-    if (a->buffer_type == STACK_BUFFER) {
+void arena_free(Arena *a) {
+    switch (a->buffer_type) {
+    case STACK_BUFFER:
         a->buffer_type = NONE;
-        return;
+        break;
+    case GROWING_BUFFER:
+        a->buffer_type = NONE;
+        {
+            Growing_Buffer *cur = a->gb.next;
+            while (cur) {
+                free(cur->buffer);
+                Growing_Buffer *aux = cur;
+                cur = cur->next;
+                free(aux);
+            }
+            free(a->gb.buffer);
+        }
+        break;
+    default: break;
     }
+}
 
-    a->buffer_type = NONE;
-    Growing_Buffer *cur = a->gb.next;
-    while (cur) {
-        free(cur->buffer);
-        Growing_Buffer *aux = cur;
-        cur = cur->next;
-        free(aux);
+// Resets the memory used by the allocator to be reused.
+void arena_reset(Arena *a) {
+    switch (a->buffer_type) {
+    case STACK_BUFFER:
+        memset(a->sb.buffer, 0, a->sb.size);
+        a->sb.pos = 0;
+        break;
+    case GROWING_BUFFER:
+        {
+            Growing_Buffer *cur = a->gb.next;
+            while (cur) {
+                free(cur->buffer);
+                Growing_Buffer *aux = cur;
+                cur = cur->next;
+                free(aux);
+            }
+            memset(a->gb.buffer, 0, a->gb.size);
+            a->gb.next = NULL;
+            a->gb.pos = 0;
+        }
+        break;
+    default: break;
     }
-    free(a->gb.buffer);
 }
 
 // Returns a `NULL` pointer if it's a `Stack_Buffer` and doesn't have enough space

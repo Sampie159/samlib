@@ -38,8 +38,8 @@
 
 #ifndef __cplusplus
 #define LEN(arr) sizeof(arr)/sizeof(arr[0])
-#define for_each(arr) for (u64 i = 0; i < len(arr); i++)
-#define for_eachr(arr) for (i64 i = len(arr) - 1; i >= 0; i--)
+#define for_each(arr) for (u64 i = 0; i < LEN(arr); i++)
+#define for_eachr(arr) for (i64 i = LEN(arr) - 1; i >= 0; i--)
 #define MIN(X, Y) ((X) < (Y) ? (X) : (Y))
 #define MAX(X, Y) ((X) > (Y) ? (X) : (Y))
 
