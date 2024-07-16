@@ -89,7 +89,7 @@ void arena_free(Arena* a) {
     }
 }
 
-// Resets the memory used by the allocator to be reused.
+// Resets the memory used by the allocator to be reused. Frees any extra memory allocated by `Growing_Buffer`.
 void arena_reset(Arena* a) {
     switch (a->buffer_type) {
     case STACK_BUFFER:
@@ -107,6 +107,25 @@ void arena_reset(Arena* a) {
         memset(a->gb.buffer, 0, a->gb.size);
         a->gb.next = NULL;
         a->gb.pos  = 0;
+    } break;
+    default: break;
+    }
+}
+
+// Resets the memory used by the allocator to be reuse. Does not free any memory.
+void arena_clear(Arena* a) {
+    switch (a->buffer_type) {
+    case STACK_BUFFER:
+        memset(a->sb.buffer, 0, a->sb.size);
+        a->sb.pos = 0;
+        break;
+    case GROWING_BUFFER: {
+        Growing_Buffer* cur = &a->gb;
+        while (cur) {
+            memset(cur->buffer, 0, cur->size);
+            cur->pos = 0;
+            cur      = cur->next;
+        }
     } break;
     default: break;
     }
