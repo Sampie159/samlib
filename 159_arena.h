@@ -1,177 +1,87 @@
 #ifndef _159_ARENA_H_
 #define _159_ARENA_H_
 
-#include <math.h>
-#include <stdlib.h>
+#include <assert.h>
+#include <stddef.h>
 #include <string.h>
+
+#ifdef __linux
+    #include <sys/mman.h>
+#else
+    #include <windows.h>
+#endif
 
 const unsigned long BYTE     = 1;
 const unsigned long KILOBYTE = 1024 * BYTE;
 const unsigned long MEGABYTE = 1024 * KILOBYTE;
 const unsigned long GIGABYTE = 1024 * MEGABYTE;
+const unsigned long TERABYTE = 1024 * GIGABYTE;
 
-#define DEFAULT_GROWING_SIZE MEGABYTE
+#define DEFAULT_ARENA_SIZE GIGABYTE
 
-typedef enum {
-    NONE,
-    STACK_BUFFER,
-    GROWING_BUFFER,
-} Buffer_Type;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct {
     void*         buffer;
     unsigned long pos;
     unsigned long size;
-} Stack_Buffer;
-
-typedef struct growing_buffer {
-    void*                  buffer;
-    struct growing_buffer* next;
-    unsigned long          pos;
-    unsigned long          size;
-} Growing_Buffer;
-
-typedef struct {
-    Buffer_Type buffer_type;
-
-    union {
-        Stack_Buffer   sb;
-        Growing_Buffer gb;
-    };
 } Arena;
 
-// Initializes a new `Arena` with the given `buffer` of length `buf_len`.
-// It's size does NOT grow.
-void arena_init_buffer(Arena* a, void* buffer, unsigned long buf_len) {
-    a->buffer_type = STACK_BUFFER;
-    a->sb.buffer   = buffer;
-    a->sb.pos      = 0;
-    a->sb.size     = buf_len;
+// Creates a new `Arena` of size `size`.
+static Arena arena_new(unsigned long size) {
+    return (Arena) {
+#ifdef __linux
+        .buffer = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0),
+#else
+        .buffer = VirtualAlloc(NULL, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+#endif
+        .pos = 0, .size = size,
+    };
 }
 
-// Initializes a new `Arena` that utilizes a Linked List structure.
-void arena_init_growing(Arena* a) {
-    a->buffer_type = GROWING_BUFFER;
-    a->gb.buffer   = malloc(DEFAULT_GROWING_SIZE);
-    a->gb.pos      = 0;
-    a->gb.next     = NULL;
-    a->gb.size     = DEFAULT_GROWING_SIZE;
+// Creates a new `Arena` of size `DEFAULT_GROWING_SIZE`.
+static Arena arena_default(void) {
+    return (Arena) {
+#ifdef __linux
+        .buffer = mmap(NULL, DEFAULT_ARENA_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0),
+#else
+        .buffer = VirtualAlloc(NULL, DEFAULT_ARENA_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+#endif
+        .pos = 0, .size = DEFAULT_ARENA_SIZE,
+    };
 }
 
-// Initializes a new `Arena` that utilizes a Linked List structure with size `size`.
-void arena_init_growing2(Arena* a, unsigned long size) {
-    a->buffer_type = GROWING_BUFFER;
-    a->gb.buffer   = malloc(size);
-    a->gb.pos      = 0;
-    a->gb.next     = NULL;
-    a->gb.size     = size;
+// Allocates `size` bytes of memory on the `Arena`.
+static void* arena_alloc(Arena* a, unsigned long size) {
+    assert(a->pos + size < a->size);
+    void* ptr  = (char*)a->buffer + a->pos;
+    a->pos    += size;
+    return ptr;
 }
 
-// Frees all the memory allocated by a `Growing_Buffer`, basically a no op for a `Stack_Buffer`.
-// Makes the `Arena` unusable in either case, until another `arena_init`.
-void arena_free(Arena* a) {
-    switch (a->buffer_type) {
-    case STACK_BUFFER: a->buffer_type = NONE; break;
-    case GROWING_BUFFER:
-        a->buffer_type = NONE;
-        {
-            Growing_Buffer* cur = a->gb.next;
-            while (cur) {
-                free(cur->buffer);
-                Growing_Buffer* aux = cur;
-                cur                 = cur->next;
-                free(aux);
-            }
-            free(a->gb.buffer);
-        }
-        break;
-    default: break;
-    }
+// Sets the cursor to position 0.
+static void arena_reset(Arena* a) { a->pos = 0; }
+
+// Sets the cursor to position 0 and zeroes the memory.
+static void arena_clear(Arena* a) {
+    memset(a->buffer, 0, a->pos);
+    a->pos = 0;
 }
 
-// Resets the memory used by the allocator to be reused. Frees any extra memory allocated by `Growing_Buffer`.
-void arena_reset(Arena* a) {
-    switch (a->buffer_type) {
-    case STACK_BUFFER:
-        memset(a->sb.buffer, 0, a->sb.size);
-        a->sb.pos = 0;
-        break;
-    case GROWING_BUFFER: {
-        Growing_Buffer* cur = a->gb.next;
-        while (cur) {
-            free(cur->buffer);
-            Growing_Buffer* aux = cur;
-            cur                 = cur->next;
-            free(aux);
-        }
-        memset(a->gb.buffer, 0, a->gb.size);
-        a->gb.next = NULL;
-        a->gb.pos  = 0;
-    } break;
-    default: break;
-    }
+// Frees the memory allocated by `Arena`.
+static void arena_free(Arena* a) {
+#ifdef __linux
+    munmap(a->buffer, a->size);
+#else
+    VirtualFree(a->buffer, 0, MEM_RELEASE);
+#endif
+    a->buffer = NULL;
 }
 
-// Resets the memory used by the allocator to be reuse. Does not free any memory.
-void arena_clear(Arena* a) {
-    switch (a->buffer_type) {
-    case STACK_BUFFER:
-        memset(a->sb.buffer, 0, a->sb.size);
-        a->sb.pos = 0;
-        break;
-    case GROWING_BUFFER: {
-        Growing_Buffer* cur = &a->gb;
-        while (cur) {
-            memset(cur->buffer, 0, cur->size);
-            cur->pos = 0;
-            cur      = cur->next;
-        }
-    } break;
-    default: break;
-    }
+#ifdef __cplusplus
 }
-
-// Returns a `NULL` pointer if it's a `Stack_Buffer` and doesn't have enough space
-// or if the `Arena` has been deinitialized.
-void* arena_alloc(Arena* a, unsigned long size) {
-    void* ret;
-
-    switch (a->buffer_type) {
-    case STACK_BUFFER:
-        if (a->sb.pos + size > a->sb.size) return NULL;
-        ret        = (char*)a->sb.buffer + a->sb.pos;
-        a->sb.pos += size;
-        break;
-    case GROWING_BUFFER: {
-        Growing_Buffer* aux = &a->gb;
-        while (1) {
-            if (aux->pos + size > a->gb.size) {
-                if (aux->next) {
-                    aux = aux->next;
-                    continue;
-                }
-
-                const unsigned long size_to_grow = (unsigned long)ceil((double)size / a->gb.size) * a->gb.size;
-
-                aux->next   = (Growing_Buffer*)malloc(sizeof(Growing_Buffer));
-                aux         = aux->next;
-                aux->buffer = malloc(size_to_grow);
-                aux->pos    = size;
-                aux->size   = size_to_grow;
-                aux->next   = NULL;
-                ret         = aux->buffer;
-                break;
-            }
-
-            ret       = (char*)aux->buffer + aux->pos;
-            aux->pos += size;
-            break;
-        }
-    } break;
-    default: ret = NULL;
-    }
-
-    return ret;
-}
+#endif
 
 #endif   // _159_ARENA_H_
