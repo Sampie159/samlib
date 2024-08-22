@@ -1,5 +1,3 @@
-#pragma once
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -69,3 +67,92 @@ typedef signed long  i64;
 
 typedef float  f32;
 typedef double f64;
+
+#define B(x)  (x)
+#define KB(x) ((x) << 10)
+#define MB(x) ((x) << 20)
+#define GB(x) ((x) << 30)
+#define TB(x) ((u64)(x) << 40)
+
+#include <assert.h>
+#include <stddef.h>
+#include <string.h>
+
+#ifdef __linux
+    #include <sys/mman.h>
+#else
+    #include <windows.h>
+#endif
+
+const unsigned long BYTE     = B(1);
+const unsigned long KILOBYTE = KB(1);
+const unsigned long MEGABYTE = MB(1);
+const unsigned long GIGABYTE = GB(1);
+const unsigned long TERABYTE = TB(1);
+
+#define DEFAULT_ARENA_SIZE GIGABYTE
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct {
+    void*         buffer;
+    unsigned long pos;
+    unsigned long size;
+} Arena;
+
+// Creates a new `Arena` of size `size`.
+static Arena arena_new(unsigned long size) {
+    return (Arena) {
+#ifdef __linux
+        .buffer = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0),
+#else
+        .buffer = VirtualAlloc(NULL, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+#endif
+        .pos = 0, .size = size,
+    };
+}
+
+// Creates a new `Arena` of size `DEFAULT_GROWING_SIZE`.
+static Arena arena_default(void) {
+    return (Arena) {
+#ifdef __linux
+        .buffer = mmap(NULL, DEFAULT_ARENA_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0),
+#else
+        .buffer = VirtualAlloc(NULL, DEFAULT_ARENA_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+#endif
+        .pos = 0, .size = DEFAULT_ARENA_SIZE,
+    };
+}
+
+// Allocates `size` bytes of memory on the `Arena`.
+static void* arena_alloc(Arena* a, unsigned long size) {
+    assert(a->pos + size < a->size);
+    void* ptr  = (char*)a->buffer + a->pos;
+    a->pos    += size;
+    return ptr;
+}
+
+// Sets the cursor to position 0.
+static void arena_reset(Arena* a) { a->pos = 0; }
+
+// Sets the cursor to position 0 and zeroes the memory.
+static void arena_clear(Arena* a) {
+    memset(a->buffer, 0, a->pos);
+    a->pos = 0;
+}
+
+// Frees the memory allocated by `Arena`.
+static void arena_free(Arena* a) {
+#ifdef __linux
+    munmap(a->buffer, a->size);
+#else
+    VirtualFree(a->buffer, 0, MEM_RELEASE);
+#endif
+    a->buffer = NULL;
+}
+
+#ifdef __cplusplus
+}
+#endif
