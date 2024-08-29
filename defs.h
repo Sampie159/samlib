@@ -281,8 +281,7 @@ static String string_format(Arena* arena, const char* fmt, ...) {
 			i32 aux_len = 0;
 			switch (*c) {
 			case 'd':
-			case 'i':
-			{
+			case 'i': {
 				if (mod == 'l') {
 					i64 arg = va_arg(args, i64);
 					i64 arg_aux = arg;
@@ -291,6 +290,10 @@ static String string_format(Arena* arena, const char* fmt, ...) {
 						str[new_str_len] = '-';
 						new_str_len += 1;
 						arg = -arg;
+					}
+					if (arg == 0) {
+						str[new_str_len] = '0';
+						new_str_len += 1;
 					}
 					while (arg_aux != 0) {
 						arg_aux /= 10;
@@ -309,6 +312,10 @@ static String string_format(Arena* arena, const char* fmt, ...) {
 						new_str_len += 1;
 						arg = -arg;
 					}
+					if (arg == 0) {
+						str[new_str_len] = '0';
+						new_str_len += 1;
+					}
 					while (arg_aux != 0) {
 						arg_aux /= 10;
 						aux_len += 1;
@@ -317,7 +324,7 @@ static String string_format(Arena* arena, const char* fmt, ...) {
 						str[new_str_len + i] = '0' + (arg % 10);
 						arg /= 10;
 					}
-				}else {
+				} else {
 					i32 arg = va_arg(args, i32);
 					i32 arg_aux = arg;
 					bool neg = (arg < 0);
@@ -325,6 +332,10 @@ static String string_format(Arena* arena, const char* fmt, ...) {
 						str[new_str_len] = '-';
 						new_str_len += 1;
 						arg = -arg;
+					}
+					if (arg == 0) {
+						str[new_str_len] = '0';
+						new_str_len += 1;
 					}
 					while (arg_aux != 0) {
 						arg_aux /= 10;
@@ -348,6 +359,10 @@ static String string_format(Arena* arena, const char* fmt, ...) {
 					str[new_str_len] = '-';
 					new_str_len += 1;
 					whole = -whole;
+				}
+				if (whole == 0) {
+					str[new_str_len] = '0';
+					new_str_len += 1;
 				}
 				i64 whole_aux = whole;
 				while (whole_aux != 0) {
@@ -388,6 +403,10 @@ static String string_format(Arena* arena, const char* fmt, ...) {
 				if (mod == 'l') {
 					u64 arg = va_arg(args, u64);
 					u64 arg_aux = arg;
+					if (arg_aux == 0) {
+						str[new_str_len] = '0';
+						new_str_len += 1;
+					}
 					while (arg_aux != 0) {
 						arg_aux /= 10;
 						aux_len += 1;
@@ -399,6 +418,10 @@ static String string_format(Arena* arena, const char* fmt, ...) {
 				} else if (mod == 'h') {
 					u16 arg = va_arg(args, u32);
 					u16 arg_aux = arg;
+					if (arg_aux == 0) {
+						str[new_str_len] = '0';
+						new_str_len += 1;
+					}
 					while (arg_aux != 0) {
 						arg_aux /= 10;
 						aux_len += 1;
@@ -407,9 +430,13 @@ static String string_format(Arena* arena, const char* fmt, ...) {
 						str[new_str_len + i] = '0' + (arg % 10);
 						arg /= 10;
 					}
-				}else {
+				} else {
 					u32 arg = va_arg(args, u32);
 					u32 arg_aux = arg;
+					if (arg_aux == 0) {
+						str[new_str_len] = '0';
+						new_str_len += 1;
+					}
 					while (arg_aux != 0) {
 						arg_aux /= 10;
 						aux_len += 1;
@@ -425,6 +452,10 @@ static String string_format(Arena* arena, const char* fmt, ...) {
 			{
 				u64 arg = (u64)va_arg(args, void*);
 				u64 arg_aux = arg;
+				if (arg_aux == 0) {
+					str[new_str_len] = '0';
+					new_str_len += 1;
+				}
 				while (arg_aux != 0) {
 					arg_aux /= 10;
 					aux_len += 1;
@@ -451,6 +482,7 @@ static String string_format(Arena* arena, const char* fmt, ...) {
 	va_end(args);
 	arena_temp_end(temp);
 	push_array(arena, u8, new_str_len);
+	str[new_str_len] = 0;
 
 	return (String) {
 		.str    = str,
