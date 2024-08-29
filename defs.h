@@ -245,21 +245,23 @@ typedef struct {
 } String16;
 
 // Creates a new 8bit string.
-static String string_new(u8* str) {
+static String string_new(Arena* arena, const u8* str) {
 	u64 length = 0;
         
 	while (str[length]) length += 1;
+	u8* new_str = push_array(arena, u8, length);
+	memcpy(new_str, str, length);
         
 	return (String) {
-		.str    = (u8*)str,
+		.str    = new_str,
 		.length = length,
 	};
 }
 
 // Creates a new 8bit string.
-#define make_string(str)  string_new((u8*)str)
+#define make_string(arena, str) string_new((arena), (u8*)str)
 
-// Creates a new formated 8bit string.
+// Allocates a new formated 8bit string.
 static String string_format(Arena* arena, const char* fmt, ...) {
 	va_list args;
 	va_start(args, fmt);
@@ -476,7 +478,7 @@ static void string_eprint(const String str) {
 #endif
 }
 
-// Creates a new `String` resulting from the concatenation of `str1` and `str2`.
+// Allocates a new `String` resulting from the concatenation of `str1` and `str2`.
 static String string_concat(Arena* arena, const String str1, const String str2) {
 	u64 new_length = str1.length + str2.length;
 	u8* new_str = push_array(arena, u8, new_length);
@@ -486,6 +488,65 @@ static String string_concat(Arena* arena, const String str1, const String str2) 
 	return (String) {
 		.str    = new_str,
 		.length = new_length,
+	};
+}
+
+// Creates a new `String` slice, range not inclusive.
+static String string_slice(const String str, const u64 init, const u64 end) {
+	return (String) {
+		.str    = str.str + init,
+		.length = end - init,
+	};
+}
+
+// Creates a new `String` slice from `init` to the end.
+#define str_slice_end(str, init)  string_slice(str, init, str.length)
+// Creates a new `String` slice from the beginning to `end`.
+#define str_slice_until(str, end) string_slice(str, 0, end)
+
+// Sets the given `String` to upper case.
+static void string_upper(String str) {
+	for (u64 i = 0; i < str.length; i++) {
+		u8* aux = str.str + i;
+		if (*aux >= 'a' && *aux <= 'z') *aux -= 32;
+	}
+}
+
+// Sets the given `String` to lower case.
+static void string_lower(String str) {
+	for (u64 i = 0; i < str.length; i++) {
+		u8* aux = str.str + i;
+		if (*aux >= 'A' && *aux <= 'Z') *aux += 32;
+	}
+}
+
+// Allocates a new uppercase `String` based on `str`.
+static String string_upper_new(Arena* arena, const String str) {
+	u8* new_str = push_array(arena, u8, str.length);
+	for (u64 i = 0; i < str.length; i++) {
+		u8* aux = str.str + i;
+		if (*aux >= 'a' && *aux <= 'z') new_str[i] = (*aux) - 32;
+		else new_str[i] = *aux;
+	}
+
+	return (String) {
+		.str    = new_str,
+		.length = str.length,
+	};
+}
+
+// Allocates a new lowercase `String` based on `str`.
+static String string_lower_new(Arena* arena, const String str) {
+	u8* new_str = push_array(arena, u8, str.length);
+	for (u64 i = 0; i < str.length; i++) {
+		u8* aux = str.str + i;
+		if (*aux >= 'A' && *aux <= 'Z') new_str[i] = (*aux) + 32;
+		else new_str[i] = *aux;
+	}
+
+	return (String) {
+		.str    = new_str,
+		.length = str.length,
 	};
 }
 
