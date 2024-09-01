@@ -20,7 +20,7 @@
 #define UNIMPLEMENTED() fprintf(stderr, "\033[1m[TODO] \033[0m%s is unimplemented!\n", __FUNCTION__)
 #define PANIC(format, ...)												\
 	fprintf(stderr, "\033[1;31m[PANIC] \033[0m" format __VA_OPT__(, ) __VA_ARGS__);	\
-exit(EXIT_FAILURE)
+	exit(EXIT_FAILURE)
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                  GENERAL                                  */
@@ -36,7 +36,7 @@ exit(EXIT_FAILURE)
 #define ALL32 0xffffffff
 #define ALL64 0xffffffffffffffff
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 #define INLINE __forceinline
 #else
 #define INLINE __attribute__((always_inline)) inline
@@ -107,7 +107,7 @@ static const f32 PI = 3.14159265359f;
 #define  B(x)  (x)
 #define KB(x) ((x) << 10)
 #define MB(x) ((x) << 20)
-#define GB(x) ((x) << 30)
+#define GB(x) ((u64)(x) << 30)
 #define TB(x) ((u64)(x) << 40)
 
 #include <assert.h>
@@ -131,78 +131,74 @@ const u64 TERABYTE = TB(1);
 #ifdef __cplusplus
 extern "C" {
 #endif
-    
+
 typedef struct {
 	void* buffer;
 	u64   pos;
 	u64   size;
-	u64   align;
+	u64   commited;
 } Arena;
-    
+
 typedef struct {
 	Arena* arena;
 	u64    pos;
 } ArenaTemp;
-    
+
 // Creates a new `Arena` of size `size`.
 static Arena arena_new(u64 size) {
 	return (Arena) {
 #ifdef __unix
-		.buffer = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0),
+		.buffer = mmap(NULL, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0),
 #else
-		.buffer = VirtualAlloc(NULL, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE),
+		.buffer = VirtualAlloc(NULL, size, MEM_RESERVE, PAGE_READWRITE),
 #endif
-		.pos   = 0,
-		.size  = size,
-		.align = 8,
+		.pos      = 0,
+		.size     = size,
+		.commited = 0,
 	};
 }
-    
+
 // Creates a new `Arena` of size `DEFAULT_GROWING_SIZE`.
 static Arena arena_default(void) {
 	return (Arena) {
 #ifdef __unix
-		.buffer = mmap(NULL, DEFAULT_ARENA_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0),
+		.buffer = mmap(NULL, DEFAULT_ARENA_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0),
 #else
-		.buffer = VirtualAlloc(NULL, DEFAULT_ARENA_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE),
+		.buffer = VirtualAlloc(NULL, DEFAULT_ARENA_SIZE, MEM_RESERVE, PAGE_READWRITE),
 #endif
-		.pos   = 0,
-		.size  = DEFAULT_ARENA_SIZE,
-		.align = 8,
+		.pos      = 0,
+		.size     = DEFAULT_ARENA_SIZE,
+		.commited = 0,
 	};
 }
 
-// Creates a new `Arena` using a stack allocator.
-static Arena arena_new_stack(char* buffer, u64 buf_size) {
-	return (Arena) {
-		.buffer = buffer,
-		.pos    = 0,
-		.size   = buf_size,
-		.align  = 8,
-	};
-}
-
-#define stack_arena(buffer) arena_new_buffer(buffer, sizeof buffer)
-    
 // Allocates `size` bytes of memory on the `Arena`.
 static void* arena_alloc(Arena* a, u64 size) {
 	if (a->pos + size > a->size) return NULL;
+	if (a->pos + size >= a->commited) {
+#ifdef __unix
+		mmap((char*)a->buffer + a->commited, KB(4), PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+#else
+		VirtualAlloc((char*)a->buffer + a->commited, KB(4), MEM_COMMIT, PAGE_READWRITE);
+#endif
+		a->commited += KB(4);
+	}
 	void* ptr = (char*)a->buffer + a->pos;
 	a->pos += size;
 	return ptr;
 }
-    
+
 #define push_array(a, T, c) (T*)arena_alloc((a), sizeof(T) * (c))
-    
+
 // Sets the cursor to position 0.
 static void arena_reset(Arena* a) { a->pos = 0; }
-    
+
 // Sets the cursor to position 0 and zeroes the memory.
 static void arena_clear(Arena* a) {
 	memset(a->buffer, 0, a->pos);
 	a->pos = 0;
 }
-    
+
 // Frees the memory allocated by `Arena`.
 static void arena_free(Arena* a) {
 #ifdef __unix
@@ -212,7 +208,7 @@ static void arena_free(Arena* a) {
 #endif
 	a->buffer = NULL;
 }
-    
+
 // Creates a new temporary `Arena`.
 static ArenaTemp arena_temp_begin(Arena* arena) {
 	return (ArenaTemp) {
@@ -220,17 +216,20 @@ static ArenaTemp arena_temp_begin(Arena* arena) {
 		.pos   = arena->pos,
 	};
 }
-    
+
 // Resets the temporary `Arena` to it's initial state.
 static void arena_temp_end(ArenaTemp temp) {
 	temp.arena->pos = temp.pos;
 }
-    
+
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                  STRINGS                                  */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include <stdarg.h>
+#ifdef __unix
+#include <unistd.h>
+#endif
 
 // 8bit string.
 typedef struct {
@@ -238,20 +237,14 @@ typedef struct {
 	u64 length;
 } String;
 
-// 16bit string (not yet implemented fully).
-typedef struct {
-	u16* str;
-	u64  length;
-} String16;
-
 // Creates a new 8bit string.
 static String string_new(Arena* arena, const u8* str) {
 	u64 length = 0;
-        
+
 	while (str[length]) length += 1;
 	u8* new_str = push_array(arena, u8, length);
 	memcpy(new_str, str, length);
-        
+
 	return (String) {
 		.str    = new_str,
 		.length = length,
@@ -494,7 +487,7 @@ static String string_format(Arena* arena, const char* fmt, ...) {
 static void string_print(const String str) {
 #ifdef __unix
 	write(1, str.str, str.length);
-#elif defined(_WIN32)
+#elif defined(_MSC_VER)
 	HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	WriteFile(handle, str.str, str.length, NULL, NULL);
 #endif
@@ -504,7 +497,7 @@ static void string_print(const String str) {
 static void string_eprint(const String str) {
 #ifdef __unix
 	write(2, str.str, str.length);
-#elif defined(_WIN32)
+#elif defined(_MSC_VER)
 	HANDLE handle = GetStdHandle(STD_ERROR_HANDLE);
 	WriteFile(handle, str.str, str.length, NULL, NULL);
 #endif
@@ -582,21 +575,161 @@ static String string_lower_new(Arena* arena, const String str) {
 	};
 }
 
-// Creates a new 16bit string.
-static String16 string16_new(u16* str) {
-	u64 length = 0;
-        
-	while (str[length]) length += 1;
-        
-	return (String16) {
-		.str    = str,
-		.length = length,
-	};
+// Checks the equality of the two `String`s.
+static bool string_equals(const String str1, const String str2) {
+	if (str1.length != str2.length) return false;
+	for (u64 i = 0; i < str1.length; i++) {
+		if (str1.str[i] != str2.str[i]) return false;
+	}
+	return true;
 }
 
-// Creates a new 16bit string.
-#define make_string16(str) string16_new((u16*)str)
-    
+// Convert `String` to `i32`.
+static i32 string_to_i32(const String str) {
+	i32 result = 0;
+	bool negative = false;
+	for (u64 i = 0; i < str.length; i++) {
+		while (str.str[i] == ' ') {
+			i++;
+		}
+		if (str.str[i] == '-') {
+			negative = true;
+			i++;
+		}
+		while (str.str[i] >= '0' && str.str[i] <= '9') {
+			result *= 10;
+			result += str.str[i] - '0';
+			i++;
+		}
+	}
+
+	return negative ? -result : result;
+}
+
+// Convert `String` to i64.
+static i64 string_to_i64(const String str) {
+	i64 result = 0;
+	bool negative = false;
+	for (u64 i = 0; i < str.length; i++) {
+		while (str.str[i] == ' ') i++;
+		if (str.str[i] == '-') {
+			negative = true;
+			i++;
+		}
+		while (str.str[i] >= '0' && str.str[i] <= '9') {
+			result *= 10;
+			result += str.str[i] - '0';
+			i++;
+		}
+	}
+
+	return negative ? -result : result;
+}
+
+// Convert `String` to u32.
+static u32 string_to_u32(const String str) {
+	u32 result = 0;
+	for (u64 i = 0; i < str.length; i++) {
+		while (str.str[i] == ' ') i++;
+		while (str.str[i] >= '0' && str.str[i] <= '9') {
+			result *= 10;
+			result += str.str[i] - '0';
+			i++;
+		}
+	}
+
+	return result;
+}
+
+// Convert `String` to u64.
+static u64 string_to_u64(const String str) {
+	u64 result = 0;
+	for (u64 i = 0; i < str.length; i++) {
+		while (str.str[i] == ' ') i++;
+		while (str.str[i] >= '0' && str.str[i] <= '9') {
+			result *= 10;
+			result += str.str[i] - '0';
+			i++;
+		}
+	}
+
+	return result;
+}
+
+// TODO(sampie): fix this shit
+#if 0
+static f32 string_to_f32(const String str) {
+	f32 result = 0;
+	f32 decimal = 0;
+	i32 aux = 0;
+	bool negative = false;
+	for (u64 i = 0; i < str.length; i++) {
+		while (str.str[i] == ' ') i++;
+		if (str.str[i] == '-') negative = true;
+		while ((str.str[i] >= '0' && str.str[i] <= '9') && str.str[i] != '.') {
+			aux *= 10;
+			aux += str.str[i] - '0';
+			i++;
+		}
+		if (str.str[i] == '.') i++;
+		else break;
+
+		u64 decimal_length;
+		while (str.str[i] >= '0' && str.str[i] <= '9') {
+			decimal_length += 1;
+		}
+	}
+
+	result = aux;
+	result += decimal;
+	return negative ? -result : result;
+}
+
+static f64 string_to_f64(const String str) {
+	f64 result = 0;
+	f64 decimal = 0;
+	bool negative = false;
+	for (u64 i = 0; i < str.length; i++) {
+		while (str.str[i] == ' ') i++;
+		if (str.str[i] == '-') negative = true;
+		while ((str.str[i] >= '0' && str.str[i] <= '9') && str.str[i] != '.') {
+			result *= 10;
+			result += str.str[i] - '0';
+			i++;
+		}
+		if (str.str[i] == '.') i++;
+		else break;
+		
+		while (str.str[i] >= '0' && str.str[i] <= '9') {
+			decimal /= 10;
+			decimal += (f64)(str.str[i] - '0') / 10;
+			i++;
+		}
+	}
+
+	result += decimal;
+	return negative ? -result : result;
+}
+#endif
+
+/* typedef struct { */
+/* 	u16* str; */
+/* 	u64  length; */
+/* } String16; */
+
+/* static String16 string16_new(u16* str) { */
+/* 	u64 length = 0; */
+
+/* 	while (str[length]) length += 1; */
+
+/* 	return (String16) { */
+/* 		.str    = str, */
+/* 		.length = length, */
+/* 	}; */
+/* } */
+
+/* #define make_string16(str) string16_new((u16*)str) */
+
 #ifdef __cplusplus
 }
 #endif
