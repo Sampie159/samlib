@@ -44,8 +44,6 @@
 
 #ifndef __cplusplus
 #define LEN(arr)           sizeof(arr) / sizeof(arr[0])
-#define for_each(arr)      for (u64 i = 0; i < LEN(arr); i++)
-#define for_eachr(arr)     for (i64 i = LEN(arr) - 1; i >= 0; i--)
 #define MIN(X, Y)          ((X) < (Y) ? (X) : (Y))
 #define MAX(X, Y)          ((X) > (Y) ? (X) : (Y))
 #define CLAMP(X, min, max) (X) = MIN(MAX(X, min), max)
@@ -110,7 +108,6 @@ static const f32 PI = 3.14159265359f;
 #define GB(x) ((u64)(x) << 30)
 #define TB(x) ((u64)(x) << 40)
 
-#include <assert.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -120,11 +117,11 @@ static const f32 PI = 3.14159265359f;
 #include <windows.h>
 #endif
 
-const u64     BYTE =  B(1);
-const u64 KILOBYTE = KB(1);
-const u64 MEGABYTE = MB(1);
-const u64 GIGABYTE = GB(1);
-const u64 TERABYTE = TB(1);
+static const u64     BYTE =  B(1);
+static const u64 KILOBYTE = KB(1);
+static const u64 MEGABYTE = MB(1);
+static const u64 GIGABYTE = GB(1);
+static const u64 TERABYTE = TB(1);
 
 #define DEFAULT_ARENA_SIZE GIGABYTE
 
@@ -175,20 +172,30 @@ static Arena arena_default(void) {
 // Allocates `size` bytes of memory on the `Arena`.
 static void* arena_alloc(Arena* a, u64 size) {
 	if (a->pos + size > a->size) return NULL;
-	if (a->pos + size >= a->commited) {
+	if (a->pos + size > a->commited) {
+		// TODO(sampie): Test this shit.
+		f64 div =  (f64)size/(f64)KB(4);
+		u64 size_to_commit = (u64)div;
+		if (div > (f64)size_to_commit) size_to_commit += 1;
+		size_to_commit *= KB(4);
 #ifdef __unix
-		mmap((char*)a->buffer + a->commited, KB(4), PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+		const i32 prot = PROT_READ | PROT_WRITE;
+		const i32 flags = MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS;
+		mmap((char*)a->buffer + a->commited, size_to_commit, prot, flags, -1, 0);
 #else
-		VirtualAlloc((char*)a->buffer + a->commited, KB(4), MEM_COMMIT, PAGE_READWRITE);
+		VirtualAlloc((char*)a->buffer + a->commited, size_to_commit, MEM_COMMIT, PAGE_READWRITE);
 #endif
-		a->commited += KB(4);
+		a->commited += size_to_commit;
 	}
 	void* ptr = (char*)a->buffer + a->pos;
 	a->pos += size;
 	return ptr;
 }
 
+// Pushes `c` amount of type `T` into arena `a`.
 #define push_array(a, T, c) (T*)arena_alloc((a), sizeof(T) * (c))
+// Pushes `T` into arena `a`.
+#define push_type(a, T) push_array(a, T, 1)
 
 // Sets the cursor to position 0.
 static void arena_reset(Arena* a) { a->pos = 0; }
@@ -207,6 +214,9 @@ static void arena_free(Arena* a) {
 	VirtualFree(a->buffer, 0, MEM_RELEASE);
 #endif
 	a->buffer = NULL;
+	a->size = 0;
+	a->pos = 0;
+	a->commited = 0;
 }
 
 // Creates a new temporary `Arena`.
@@ -487,7 +497,7 @@ static String string_format(Arena* arena, const char* fmt, ...) {
 static void string_print(const String str) {
 #ifdef __unix
 	write(1, str.str, str.length);
-#elif defined(_MSC_VER)
+#else
 	HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	WriteFile(handle, str.str, str.length, NULL, NULL);
 #endif
@@ -497,7 +507,7 @@ static void string_print(const String str) {
 static void string_eprint(const String str) {
 #ifdef __unix
 	write(2, str.str, str.length);
-#elif defined(_MSC_VER)
+#elif
 	HANDLE handle = GetStdHandle(STD_ERROR_HANDLE);
 	WriteFile(handle, str.str, str.length, NULL, NULL);
 #endif
@@ -587,13 +597,13 @@ static bool string_equals(const String str1, const String str2) {
 // Convert `String` to `i32`.
 static i32 string_to_i32(const String str) {
 	i32 result = 0;
-	bool negative = false;
+	i32 negative = 0;
 	for (u64 i = 0; i < str.length; i++) {
 		while (str.str[i] == ' ') {
 			i++;
 		}
 		if (str.str[i] == '-') {
-			negative = true;
+			negative = -1;
 			i++;
 		}
 		while (str.str[i] >= '0' && str.str[i] <= '9') {
@@ -603,17 +613,17 @@ static i32 string_to_i32(const String str) {
 		}
 	}
 
-	return negative ? -result : result;
+	return result * negative;
 }
 
 // Convert `String` to i64.
 static i64 string_to_i64(const String str) {
 	i64 result = 0;
-	bool negative = false;
+	i64 negative = 0;
 	for (u64 i = 0; i < str.length; i++) {
 		while (str.str[i] == ' ') i++;
 		if (str.str[i] == '-') {
-			negative = true;
+			negative = -1;
 			i++;
 		}
 		while (str.str[i] >= '0' && str.str[i] <= '9') {
@@ -623,7 +633,7 @@ static i64 string_to_i64(const String str) {
 		}
 	}
 
-	return negative ? -result : result;
+	return result * negative;
 }
 
 // Convert `String` to u32.
