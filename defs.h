@@ -1,5 +1,19 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                 INCLUDES                                  */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
+#include <string.h>
+#include <stdarg.h>
+
+#ifdef __unix
+#include <sys/mman.h>
+#include <unistd.h>
+#else
+#include <windows.h>
+#endif
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                   DEBUG                                   */
@@ -101,15 +115,6 @@ static const f32 PI = 3.14159265359f;
 #define GB(x) ((u64)(x) << 30)
 #define TB(x) ((u64)(x) << 40)
 
-#include <stddef.h>
-#include <string.h>
-
-#ifdef __unix
-#include <sys/mman.h>
-#else
-#include <windows.h>
-#endif
-
 #define DEFAULT_ARENA_SIZE GB(1)
 
 #ifdef __cplusplus
@@ -119,8 +124,8 @@ extern "C" {
 typedef struct {
 	void* buffer;
 	u64   pos;
-	u64   size;
-	u64   commited;
+	u64   cap;
+	u64   com;
 } Arena;
 
 typedef struct {
@@ -129,37 +134,26 @@ typedef struct {
 } ArenaTemp;
 
 // Create a new `Arena` of size `size`.
-static Arena arena_new(u64 size) {
+static Arena arena_new(u64 cap) {
 	return (Arena) {
 #ifdef __unix
-		.buffer = mmap(NULL, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0),
+		.buffer = mmap(NULL, cap, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0),
 #else
-		.buffer = VirtualAlloc(NULL, size, MEM_RESERVE, PAGE_READWRITE),
+		.buffer = VirtualAlloc(NULL, cap, MEM_RESERVE, PAGE_READWRITE),
 #endif
-		.pos      = 0,
-		.size     = size,
-		.commited = 0,
+		.pos = 0,
+		.cap = cap,
+		.com = 0,
 	};
 }
 
-// Create a new `Arena` of size `DEFAULT_GROWING_SIZE`.
-static Arena arena_default(void) {
-	return (Arena) {
-#ifdef __unix
-		.buffer = mmap(NULL, DEFAULT_ARENA_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0),
-#else
-		.buffer = VirtualAlloc(NULL, DEFAULT_ARENA_SIZE, MEM_RESERVE, PAGE_READWRITE),
-#endif
-		.pos      = 0,
-		.size     = DEFAULT_ARENA_SIZE,
-		.commited = 0,
-	};
-}
+// Create a new `Arena` of size `DEFAULT_ARENA_SIZE`.
+#define arena_default() arena_new(DEFAULT_ARENA_SIZE)
 
 // Allocate `size` bytes of memory on the `Arena`.
 static void* arena_alloc(Arena* a, u64 size) {
-	if (a->pos + size > a->size) return NULL;
-	if (a->pos + size > a->commited) {
+	if (a->pos + size > a->cap) return NULL;
+	if (a->pos + size > a->com) {
 		// TODO(sampie): Test this shit.
 		f64 div =  (f64)size/(f64)KB(4);
 		u64 size_to_commit = (u64)div;
@@ -168,11 +162,11 @@ static void* arena_alloc(Arena* a, u64 size) {
 #ifdef __unix
 		const s32 prot = PROT_READ | PROT_WRITE;
 		const s32 flags = MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS;
-		mmap((char*)a->buffer + a->commited, size_to_commit, prot, flags, -1, 0);
+		mmap((char*)a->buffer + a->com, size_to_commit, prot, flags, -1, 0);
 #else
-		VirtualAlloc((char*)a->buffer + a->commited, size_to_commit, MEM_COMMIT, PAGE_READWRITE);
+		VirtualAlloc((char*)a->buffer + a->com, size_to_commit, MEM_COMMIT, PAGE_READWRITE);
 #endif
-		a->commited += size_to_commit;
+		a->com += size_to_commit;
 	}
 	void* ptr = (char*)a->buffer + a->pos;
 	a->pos += size;
@@ -196,14 +190,14 @@ static void arena_clear(Arena* a) {
 // Free the memory allocated by `Arena`.
 static void arena_free(Arena* a) {
 #ifdef __unix
-	munmap(a->buffer, a->size);
+	munmap(a->buffer, a->cap);
 #else
 	VirtualFree(a->buffer, 0, MEM_RELEASE);
 #endif
 	a->buffer = NULL;
-	a->size = 0;
+	a->cap = 0;
 	a->pos = 0;
-	a->commited = 0;
+	a->com = 0;
 }
 
 // Create a new temporary `Arena`.
@@ -222,11 +216,6 @@ static void arena_temp_end(ArenaTemp temp) {
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                  STRINGS                                  */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
-#include <stdarg.h>
-#ifdef __unix
-#include <unistd.h>
-#endif
 
 // 8bit string.
 typedef struct {
