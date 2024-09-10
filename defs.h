@@ -87,10 +87,7 @@ static const s32 MIN_S32 = -2147483647 - 1;
 static const s64 MIN_S64 = -9223372036854775807 - 1;
 
 static const f32 MAX_F32 = 3.402823466e+38f;
-static const f32 MIN_F32 = -MAX_F32;
-
 static const f64 MAX_F64 = 1.79769313486231e+308;
-static const f64 MIN_F64 = -MAX_F64;
 
 static const f32 PI = 3.14159265359f;
 
