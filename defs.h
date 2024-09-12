@@ -61,7 +61,6 @@
 #if !(__STDC_VERSION__ > 201710)
 #define true  1
 #define false 0
-typedef char bool;
 #endif
 
 typedef char* string;
@@ -84,6 +83,11 @@ typedef signed long long s64;
 
 typedef float  f32;
 typedef double f64;
+
+typedef s8  b8;
+typedef s16 b16;
+typedef s32 b32;
+typedef s64 b64;
 
 static const u8  MAX_U8  = ALL8;
 static const u16 MAX_U16 = ALL16;
