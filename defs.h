@@ -182,6 +182,15 @@ static void* arena_alloc(Arena* a, u64 size) {
 // Push `T` into arena `a`.
 #define push_type(a, T) push_array(a, T, 1)
 
+// Pop `size` bytes from the top of the `Arena`.
+static void* arena_pop(Arena* arena, u64 size) {
+    arena->pos -= size;
+    return (u8*)arena->buffer + arena->pos;
+}
+
+// Pop the type `T` from the top of the `Arena`.
+#define pop_type(a, T) arena_pop((a), sizeof(T))
+
 // Set the cursor to position 0.
 static void arena_reset(Arena* a) { a->pos = 0; }
 
@@ -250,7 +259,7 @@ static String string_format(Arena* arena, const char* fmt, ...) {
 	va_start(args, fmt);
 
 	ArenaTemp temp = arena_temp_begin(arena);
-	u8* str = arena_alloc(arena, B(256));
+	u8* str = (u8*)arena_alloc(arena, B(256));
 	u64 new_str_len = 0;
 
 	for (const char *c = fmt; *c != 0; c++) {
@@ -268,7 +277,7 @@ static String string_format(Arena* arena, const char* fmt, ...) {
 				if (mod == 'l') {
 					s64 arg = va_arg(args, s64);
 					s64 arg_aux = arg;
-					bool neg = (arg < 0);
+					b8 neg = (arg < 0);
 					if (neg) {
 						str[new_str_len] = '-';
 						new_str_len += 1;
@@ -289,7 +298,7 @@ static String string_format(Arena* arena, const char* fmt, ...) {
 				} else if (mod == 'h') {
 					s16 arg = va_arg(args, s32);
 					s16 arg_aux = arg;
-					bool neg = (arg < 0);
+					b8 neg = (arg < 0);
 					if (neg) {
 						str[new_str_len] = '-';
 						new_str_len += 1;
@@ -310,7 +319,7 @@ static String string_format(Arena* arena, const char* fmt, ...) {
 				} else {
 					s32 arg = va_arg(args, s32);
 					s32 arg_aux = arg;
-					bool neg = (arg < 0);
+					b8 neg = (arg < 0);
 					if (neg) {
 						str[new_str_len] = '-';
 						new_str_len += 1;
@@ -337,7 +346,7 @@ static String string_format(Arena* arena, const char* fmt, ...) {
 				f64 arg = va_arg(args, f64);
 				s64 whole = (s64)arg;
 				arg -= whole;
-				bool neg = (whole < 0);
+				b8 neg = (whole < 0);
 				if (neg) {
 					str[new_str_len] = '-';
 					new_str_len += 1;
@@ -566,7 +575,7 @@ static String string_lower_new(Arena* arena, const String str) {
 }
 
 // Check the equality of the two `String`s.
-static bool string_equals(const String str1, const String str2) {
+static b8 string_equals(const String str1, const String str2) {
 	if (str1.length != str2.length) return false;
 	for (u64 i = 0; i < str1.length; i++) {
 		if (str1.str[i] != str2.str[i]) return false;
@@ -726,7 +735,7 @@ static f32 string_to_f32(const String str) {
 	f32 result = 0;
 	f32 decimal = 0;
 	s32 aux = 0;
-	bool negative = false;
+	b8 negative = false;
 	for (u64 i = 0; i < str.length; i++) {
 		while (str.str[i] == ' ') i++;
 		if (str.str[i] == '-') negative = true;
@@ -752,7 +761,7 @@ static f32 string_to_f32(const String str) {
 static f64 string_to_f64(const String str) {
 	f64 result = 0;
 	f64 decimal = 0;
-	bool negative = false;
+	b8 negative = false;
 	for (u64 i = 0; i < str.length; i++) {
 		while (str.str[i] == ' ') i++;
 		if (str.str[i] == '-') negative = true;
