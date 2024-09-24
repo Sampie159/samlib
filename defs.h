@@ -31,11 +31,6 @@
 #define OK(format, ...)
 #endif
 
-#define UNIMPLEMENTED() fprintf(stderr, "\033[1m[TODO] \033[0m%s is unimplemented!\n", __FUNCTION__)
-#define PANIC(format, ...)												\
-	fprintf(stderr, "\033[1;31m[PANIC] \033[0m" format __VA_OPT__(, ) __VA_ARGS__);	\
-	exit(EXIT_FAILURE)
-
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                  GENERAL                                  */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -56,6 +51,11 @@
 #define MIN(X, Y)          ((X) < (Y) ? (X) : (Y))
 #define MAX(X, Y)          ((X) > (Y) ? (X) : (Y))
 #define CLAMP(X, min, max) (X) = MIN(MAX(X, min), max)
+#define UNIMPLEMENTED()    fprintf(stderr, "\033[1m[TODO] \033[0m%s is unimplemented!\n", __FUNCTION__)
+#define PANIC(format, ...) do {                                                            \
+fprintf(stderr, "\033[1;31m[PANIC] \033[0m" format __VA_OPT__(, ) __VA_ARGS__);	\
+exit(EXIT_FAILURE);                                                                \
+} while (0)
 
 #ifndef __cplusplus
 #if !(__STDC_VERSION__ > 201710)
@@ -121,10 +121,6 @@ static const f32 PI = 3.14159265359f;
 
 #define DEFAULT_ARENA_SIZE GB(1)
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct {
 	void* buffer;
 	u64   pos;
@@ -137,9 +133,11 @@ typedef struct {
 	u64    pos;
 } ArenaTemp;
 
-// Create a new `Arena` of size `size`.
+// Create a new `Arena` of size `size`. Minimum size is 4KB, if a smaller size is
+// given it will still allocate 4KB.
 static Arena arena_new(u64 cap) {
-	return (Arena) {
+	if (cap < KB(4)) cap = KB(4);
+    return (Arena) {
 #ifdef __unix
 		.buffer = mmap(NULL, cap, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0),
 #else
@@ -272,198 +270,198 @@ static String string_format(Arena* arena, const char* fmt, ...) {
 			}
 			s32 aux_len = 0;
 			switch (*c) {
-			case 'd':
-			case 'i': {
-				if (mod == 'l') {
-					s64 arg = va_arg(args, s64);
-					s64 arg_aux = arg;
-					b8 neg = (arg < 0);
-					if (neg) {
-						str[new_str_len] = '-';
-						new_str_len += 1;
-						arg = -arg;
-					}
-					if (arg == 0) {
-						str[new_str_len] = '0';
-						new_str_len += 1;
-					}
-					while (arg_aux != 0) {
-						arg_aux /= 10;
-						aux_len += 1;
-					}
-					for (s32 i = aux_len - 1; i >= 0; i--) {
-						str[new_str_len + i] = '0' + (arg % 10);
-						arg /= 10;
-					}
-				} else if (mod == 'h') {
-					s16 arg = va_arg(args, s32);
-					s16 arg_aux = arg;
-					b8 neg = (arg < 0);
-					if (neg) {
-						str[new_str_len] = '-';
-						new_str_len += 1;
-						arg = -arg;
-					}
-					if (arg == 0) {
-						str[new_str_len] = '0';
-						new_str_len += 1;
-					}
-					while (arg_aux != 0) {
-						arg_aux /= 10;
-						aux_len += 1;
-					}
-					for (s32 i = aux_len - 1; i >= 0; i--) {
-						str[new_str_len + i] = '0' + (arg % 10);
-						arg /= 10;
-					}
-				} else {
-					s32 arg = va_arg(args, s32);
-					s32 arg_aux = arg;
-					b8 neg = (arg < 0);
-					if (neg) {
-						str[new_str_len] = '-';
-						new_str_len += 1;
-						arg = -arg;
-					}
-					if (arg == 0) {
-						str[new_str_len] = '0';
-						new_str_len += 1;
-					}
-					while (arg_aux != 0) {
-						arg_aux /= 10;
-						aux_len += 1;
-					}
-					for (s32 i = aux_len - 1; i >= 0; i--) {
-						str[new_str_len + i] = '0' + (arg % 10);
-						arg /= 10;
-					}
-				}
-				new_str_len += aux_len;
-			} break;
-			case 'f':
-			case 'F':
-			{
-				f64 arg = va_arg(args, f64);
-				s64 whole = (s64)arg;
-				arg -= whole;
-				b8 neg = (whole < 0);
-				if (neg) {
-					str[new_str_len] = '-';
-					new_str_len += 1;
-					whole = -whole;
-				}
-				if (whole == 0) {
-					str[new_str_len] = '0';
-					new_str_len += 1;
-				}
-				s64 whole_aux = whole;
-				while (whole_aux != 0) {
-					whole_aux /= 10;
-					aux_len += 1;
-				}
-				for (s32 i = aux_len - 1; i >= 0; i--) {
-					str[new_str_len + i] = '0' + (whole % 10);
-					whole /= 10;
-				}
-				new_str_len += aux_len;
-				str[new_str_len] = '.';
-				new_str_len += 1;
-				for (s8 prec = 0; prec < 12; prec++) {
-					arg *= 10;
-					s32 digit = (s32)arg;
-					str[new_str_len] = '0' + digit;
-					new_str_len += 1;
-					arg -= digit;
-				}
-			} break;
-			case 'c': {
-				u8 arg = (u8)va_arg(args, int);
-				str[new_str_len] = arg;
-				new_str_len += 1;
-			} break;
-			case 's':
-			{
-				char* arg = va_arg(args, char*);
-				while (*arg != 0) {
-					str[new_str_len] = *arg;
-					arg++;
-					new_str_len += 1;
-				}
-			} break;
-			case 'u':
-			{
-				if (mod == 'l') {
-					u64 arg = va_arg(args, u64);
-					u64 arg_aux = arg;
-					if (arg_aux == 0) {
-						str[new_str_len] = '0';
-						new_str_len += 1;
-					}
-					while (arg_aux != 0) {
-						arg_aux /= 10;
-						aux_len += 1;
-					}
-					for (s32 i = aux_len - 1; i >= 0; i--) {
-						str[new_str_len + i] = '0' + (arg % 10);
-						arg /= 10;
-					}
-				} else if (mod == 'h') {
-					u16 arg = va_arg(args, u32);
-					u16 arg_aux = arg;
-					if (arg_aux == 0) {
-						str[new_str_len] = '0';
-						new_str_len += 1;
-					}
-					while (arg_aux != 0) {
-						arg_aux /= 10;
-						aux_len += 1;
-					}
-					for (s32 i = aux_len - 1; i >= 0; i--) {
-						str[new_str_len + i] = '0' + (arg % 10);
-						arg /= 10;
-					}
-				} else {
-					u32 arg = va_arg(args, u32);
-					u32 arg_aux = arg;
-					if (arg_aux == 0) {
-						str[new_str_len] = '0';
-						new_str_len += 1;
-					}
-					while (arg_aux != 0) {
-						arg_aux /= 10;
-						aux_len += 1;
-					}
-					for (s32 i = aux_len - 1; i >= 0; i--) {
-						str[new_str_len + i] = '0' + (arg % 10);
-						arg /= 10;
-					}
-				}
-				new_str_len += aux_len;
-			} break;
-			case 'p':
-			{
-				u64 arg = (u64)va_arg(args, void*);
-				u64 arg_aux = arg;
-				if (arg_aux == 0) {
-					str[new_str_len] = '0';
-					new_str_len += 1;
-				}
-				while (arg_aux != 0) {
-					arg_aux /= 10;
-					aux_len += 1;
-				}
-				for (s32 i = aux_len - 1; i >= 0; i--) {
-					str[new_str_len + i] = '0' + (arg % 10);
-					arg /= 10;
-				}
-				new_str_len += aux_len;
-			} break;
-			case '%':
-			{
-				str[new_str_len] = '%';
-				new_str_len += 1;
-			} break;
-			default: break;
+                case 'd':
+                case 'i': {
+                    if (mod == 'l') {
+                        s64 arg = va_arg(args, s64);
+                        s64 arg_aux = arg;
+                        b8 neg = (arg < 0);
+                        if (neg) {
+                            str[new_str_len] = '-';
+                            new_str_len += 1;
+                            arg = -arg;
+                        }
+                        if (arg == 0) {
+                            str[new_str_len] = '0';
+                            new_str_len += 1;
+                        }
+                        while (arg_aux != 0) {
+                            arg_aux /= 10;
+                            aux_len += 1;
+                        }
+                        for (s32 i = aux_len - 1; i >= 0; i--) {
+                            str[new_str_len + i] = '0' + (arg % 10);
+                            arg /= 10;
+                        }
+                    } else if (mod == 'h') {
+                        s16 arg = va_arg(args, s32);
+                        s16 arg_aux = arg;
+                        b8 neg = (arg < 0);
+                        if (neg) {
+                            str[new_str_len] = '-';
+                            new_str_len += 1;
+                            arg = -arg;
+                        }
+                        if (arg == 0) {
+                            str[new_str_len] = '0';
+                            new_str_len += 1;
+                        }
+                        while (arg_aux != 0) {
+                            arg_aux /= 10;
+                            aux_len += 1;
+                        }
+                        for (s32 i = aux_len - 1; i >= 0; i--) {
+                            str[new_str_len + i] = '0' + (arg % 10);
+                            arg /= 10;
+                        }
+                    } else {
+                        s32 arg = va_arg(args, s32);
+                        s32 arg_aux = arg;
+                        b8 neg = (arg < 0);
+                        if (neg) {
+                            str[new_str_len] = '-';
+                            new_str_len += 1;
+                            arg = -arg;
+                        }
+                        if (arg == 0) {
+                            str[new_str_len] = '0';
+                            new_str_len += 1;
+                        }
+                        while (arg_aux != 0) {
+                            arg_aux /= 10;
+                            aux_len += 1;
+                        }
+                        for (s32 i = aux_len - 1; i >= 0; i--) {
+                            str[new_str_len + i] = '0' + (arg % 10);
+                            arg /= 10;
+                        }
+                    }
+                    new_str_len += aux_len;
+                } break;
+                case 'f':
+                case 'F':
+                {
+                    f64 arg = va_arg(args, f64);
+                    s64 whole = (s64)arg;
+                    arg -= whole;
+                    b8 neg = (whole < 0);
+                    if (neg) {
+                        str[new_str_len] = '-';
+                        new_str_len += 1;
+                        whole = -whole;
+                    }
+                    if (whole == 0) {
+                        str[new_str_len] = '0';
+                        new_str_len += 1;
+                    }
+                    s64 whole_aux = whole;
+                    while (whole_aux != 0) {
+                        whole_aux /= 10;
+                        aux_len += 1;
+                    }
+                    for (s32 i = aux_len - 1; i >= 0; i--) {
+                        str[new_str_len + i] = '0' + (whole % 10);
+                        whole /= 10;
+                    }
+                    new_str_len += aux_len;
+                    str[new_str_len] = '.';
+                    new_str_len += 1;
+                    for (s8 prec = 0; prec < 12; prec++) {
+                        arg *= 10;
+                        s32 digit = (s32)arg;
+                        str[new_str_len] = '0' + digit;
+                        new_str_len += 1;
+                        arg -= digit;
+                    }
+                } break;
+                case 'c': {
+                    u8 arg = (u8)va_arg(args, int);
+                    str[new_str_len] = arg;
+                    new_str_len += 1;
+                } break;
+                case 's':
+                {
+                    char* arg = va_arg(args, char*);
+                    while (*arg != 0) {
+                        str[new_str_len] = *arg;
+                        arg++;
+                        new_str_len += 1;
+                    }
+                } break;
+                case 'u':
+                {
+                    if (mod == 'l') {
+                        u64 arg = va_arg(args, u64);
+                        u64 arg_aux = arg;
+                        if (arg_aux == 0) {
+                            str[new_str_len] = '0';
+                            new_str_len += 1;
+                        }
+                        while (arg_aux != 0) {
+                            arg_aux /= 10;
+                            aux_len += 1;
+                        }
+                        for (s32 i = aux_len - 1; i >= 0; i--) {
+                            str[new_str_len + i] = '0' + (arg % 10);
+                            arg /= 10;
+                        }
+                    } else if (mod == 'h') {
+                        u16 arg = va_arg(args, u32);
+                        u16 arg_aux = arg;
+                        if (arg_aux == 0) {
+                            str[new_str_len] = '0';
+                            new_str_len += 1;
+                        }
+                        while (arg_aux != 0) {
+                            arg_aux /= 10;
+                            aux_len += 1;
+                        }
+                        for (s32 i = aux_len - 1; i >= 0; i--) {
+                            str[new_str_len + i] = '0' + (arg % 10);
+                            arg /= 10;
+                        }
+                    } else {
+                        u32 arg = va_arg(args, u32);
+                        u32 arg_aux = arg;
+                        if (arg_aux == 0) {
+                            str[new_str_len] = '0';
+                            new_str_len += 1;
+                        }
+                        while (arg_aux != 0) {
+                            arg_aux /= 10;
+                            aux_len += 1;
+                        }
+                        for (s32 i = aux_len - 1; i >= 0; i--) {
+                            str[new_str_len + i] = '0' + (arg % 10);
+                            arg /= 10;
+                        }
+                    }
+                    new_str_len += aux_len;
+                } break;
+                case 'p':
+                {
+                    u64 arg = (u64)va_arg(args, void*);
+                    u64 arg_aux = arg;
+                    if (arg_aux == 0) {
+                        str[new_str_len] = '0';
+                        new_str_len += 1;
+                    }
+                    while (arg_aux != 0) {
+                        arg_aux /= 10;
+                        aux_len += 1;
+                    }
+                    for (s32 i = aux_len - 1; i >= 0; i--) {
+                        str[new_str_len + i] = '0' + (arg % 10);
+                        arg /= 10;
+                    }
+                    new_str_len += aux_len;
+                } break;
+                case '%':
+                {
+                    str[new_str_len] = '%';
+                    new_str_len += 1;
+                } break;
+                default: break;
 			}
 		} else {
 			str[new_str_len] = *c;
@@ -772,7 +770,7 @@ static f64 string_to_f64(const String str) {
 		}
 		if (str.str[i] == '.') i++;
 		else break;
-		
+
 		while (str.str[i] >= '0' && str.str[i] <= '9') {
 			decimal /= 10;
 			decimal += (f64)(str.str[i] - '0') / 10;
@@ -802,7 +800,3 @@ static f64 string_to_f64(const String str) {
 /* } */
 
 /* #define make_string16(str) string16_new((u16*)str) */
-
-#ifdef __cplusplus
-}
-#endif
