@@ -416,10 +416,10 @@ b8 string_equals(const String str1, const String str2) {
 	return true;
 }
 
-b8 string_equals2(const String str1, const char* str2) {
+b8 string_cmp(const String str1, const char* str2) {
     if (str2[str1.length] != 0) return false;
     for (u64 i = 0; i < str1.length; i++) {
-        if (str1.str[i] != str2.str[i]) return false;
+        if (str1.str[i] != str2[i]) return false;
     }
     return true;
 }

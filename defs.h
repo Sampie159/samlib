@@ -41,9 +41,9 @@
 #define MAX(X, Y)          ((X) > (Y) ? (X) : (Y))
 #define CLAMP(X, min, max) (X) = MIN(MAX(X, min), max)
 #define UNIMPLEMENTED()    fprintf(stderr, "\033[1m[TODO] \033[0m%s is unimplemented!\n", __FUNCTION__)
-#define PANIC(format, ...) do {                                                            \
-fprintf(stderr, "\033[1;31m[PANIC] \033[0m" format __VA_OPT__(, ) __VA_ARGS__);	\
-exit(EXIT_FAILURE);                                                                \
+#define PANIC(format, ...) do {                                                     \
+    fprintf(stderr, "\033[1;31m[PANIC] \033[0m" format __VA_OPT__(, ) __VA_ARGS__);	\
+    exit(EXIT_FAILURE);                                                             \
 } while (0)
 
 #ifndef __cplusplus
@@ -102,6 +102,10 @@ global const f64 MAX_F64 = 1.79769313486231e+308;
 
 global const f32 PI = 3.14159265359f;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                               ARENA/MEMORY                                */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -140,7 +144,7 @@ void      arena_temp_end(ArenaTemp temp);
 
 #define arena_default()     arena_new(DEFAULT_ARENA_SIZE)
 #define push_array(a, T, c) (T*)arena_alloc((a), sizeof(T) * (c))
-#define push_type(a, T)     push_array(a, T, 1)
+#define push_type(a, T)     (T*)arena_alloc((a), sizeof(T))
 #define pop_type(a, T)      arena_pop((a), sizeof(T))
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -164,7 +168,7 @@ void   string_lower(String str);
 String string_upper_new(Arena* arena, const String str);
 String string_lower_new(Arena* arena, const String str);
 b8     string_equals(const String str1, const String str2);
-b8     string_equals2(const String str1, const char* str2);
+b8     string_cmp(const String str1, const char* str2);
 s8     string_to_s8(const String str);
 s16    string_to_s16(const String str);
 s32    string_to_s32(const String str);
@@ -188,5 +192,9 @@ f64 string_to_f64(const String str);
 /* 	u16* str; */
 /* 	u64  length; */
 /* } String16; */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif  // _DEFS_H_
