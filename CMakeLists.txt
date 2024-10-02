@@ -10,3 +10,8 @@ set_target_properties(
     defs PROPERTIES
     PUBLIC_HEADER defs.h
 )
+
+target_include_directories(
+    defs
+    "./"
+)
