@@ -1,3 +1,6 @@
+cmake_minimum_required(VERSION 3.28)
+project(defs C)
+
 add_library(
 	defs
 	defs.c
