@@ -145,7 +145,7 @@ void      arena_temp_end(ArenaTemp temp);
 #define arena_default()     arena_new(DEFAULT_ARENA_SIZE)
 #define push_array(a, T, c) (T*)arena_alloc((a), sizeof(T) * (c))
 #define push_type(a, T)     (T*)arena_alloc((a), sizeof(T))
-#define pop_type(a, T)      arena_pop((a), sizeof(T))
+#define pop_type(a, T)      (T*)arena_pop((a), sizeof(T))
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                  STRINGS                                  */
@@ -177,21 +177,14 @@ u8     string_to_u8(const String str);
 u16    string_to_u16(const String str);
 u32    string_to_u32(const String str);
 u64    string_to_u64(const String str);
-
 #if 0
-f32 string_to_f32(const String str);
-
-f64 string_to_f64(const String str);
+f32    string_to_f32(const String str);
+f64    string_to_f64(const String str);
 #endif
 
 #define make_string(arena, str) string_new((arena), (u8*)str)
 #define str_slice_end(str, init)  string_slice(str, init, str.length)
 #define str_slice_until(str, end) string_slice(str, 0, end)
-
-/* typedef struct { */
-/* 	u16* str; */
-/* 	u64  length; */
-/* } String16; */
 
 #ifdef __cplusplus
 }
