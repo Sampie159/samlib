@@ -182,9 +182,31 @@ f32    string_to_f32(const String str);
 f64    string_to_f64(const String str);
 #endif
 
-#define make_string(arena, str) string_new((arena), (u8*)str)
+#define make_string(arena, str)   string_new((arena), (u8*)str)
 #define str_slice_end(str, init)  string_slice(str, init, str.length)
 #define str_slice_until(str, end) string_slice(str, 0, end)
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                               DYNAMIC ARRAY                               */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+typedef struct {
+    void*  data;
+    u64    cap;
+    u64    len;
+
+    const u64 type_size;
+} DynArray;
+
+DynArray dynarray_create(u64 type_size);
+void     dynarray_reserve(DynArray* da, u64 cap);
+void     dynarray_resize(DynArray* da, u64 new_cap);
+void     dynarray_push(DynArray* da, const void* val);
+void     dynarray_pushf(DynArray* da, const void* val);
+
+#define make_dynarray(T)      dynarray_create(sizeof(T))
+#define push_dynarray(da, v)  dynarray_push((da), (void*)(v))
+#define pushf_dynarray(da, v) dynarray_pushf((da), (void*)(v))
 
 #ifdef __cplusplus
 }
