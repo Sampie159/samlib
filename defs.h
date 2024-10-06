@@ -160,7 +160,9 @@ typedef struct {
 String string_new(Arena* arena, const u8* str);
 String string_format(Arena* arena, const char* fmt, ...);
 void   string_print(const String str);
+void   string_println(const String str);
 void   string_eprint(const String str);
+void   string_eprintln(const String str);
 String string_concat(Arena* arena, const String str1, const String str2);
 String string_slice(const String str, const u64 init, const u64 end);
 void   string_upper(String str);

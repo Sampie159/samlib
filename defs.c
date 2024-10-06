@@ -338,6 +338,17 @@ void string_print(const String str) {
 #endif
 }
 
+void string_println(const String str) {
+#ifdef __unix
+    write(1, str.str, str.length);
+    write(1, "\n", 1);
+#else
+    HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
+    WriteFile(handle, str.str, str.length, NULL, NULL);
+    WriteFile(handle, "\n", 1, NULL, NULL);
+#endif
+}
+
 void string_eprint(const String str) {
 #ifdef __unix
 	write(2, str.str, str.length);
@@ -346,6 +357,18 @@ void string_eprint(const String str) {
 	WriteFile(handle, str.str, str.length, NULL, NULL);
 #endif
 }
+
+void string_eprintln(const String str) {
+#ifdef __unix
+    write(2, str.str, str.length);
+    write(2, "\n", 1);
+#else
+    HANDLE handle = GetStdHandle(STD_ERROR_HANDLE);
+    WriteFile(handle, str.str, str.length, NULL, NULL);
+    WriteFile(handle, "\n", 1, NULL, NULL);
+#endif
+}
+
 
 String string_concat(Arena* arena, const String str1, const String str2) {
 	u64 new_length = str1.length + str2.length;
