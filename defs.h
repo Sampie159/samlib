@@ -172,6 +172,7 @@ void   string_write_f64(String* str, f64 val);
 void   string_write_ptr(String* str, const void* ptr);
 void   string_newline(String* str);
 void   string_reset(String* str);
+char*  string_to_cstr(String* str);
 void   string_print(const String str);
 void   string_println(const String str);
 void   string_eprint(const String str);

@@ -351,6 +351,11 @@ void string_reset(String* str) {
     str->length = 0;
 }
 
+char* string_to_cstr(String* str) {
+    str->buffer[str->length] = 0;
+    return str->buffer;
+}
+
 void string_print(const String str) {
 #ifdef __unix
 	write(1, str.buffer, str.length);
