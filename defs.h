@@ -153,12 +153,24 @@ void      arena_temp_end(ArenaTemp temp);
 
 // 8bit string.
 typedef struct {
-	u8* str;
+	u8* buffer;
 	u64 length;
 } String;
 
-String string_new(Arena* arena, const u8* str);
-String string_format(Arena* arena, const char* fmt, ...);
+String string_init(u8* buffer);
+void   string_write_str(String* str, const char* s);
+void   string_write_s8(String* str, s8 val);
+void   string_write_s16(String* str, s16 val);
+void   string_write_s32(String* str, s32 val);
+void   string_write_s64(String* str, s64 val);
+void   string_write_u8(String* str, u8 val);
+void   string_write_u16(String* str, u16 val);
+void   string_write_u32(String* str, u32 val);
+void   string_write_u64(String* str, u64 val);
+void   string_write_f32(String* str, f32 val);
+void   string_write_f64(String* str, f64 val);
+void   string_write_ptr(String* str, const void* ptr);
+void   string_newline(String* str);
 void   string_print(const String str);
 void   string_println(const String str);
 void   string_eprint(const String str);
