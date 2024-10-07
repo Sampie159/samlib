@@ -347,6 +347,10 @@ void string_newline(String* str) {
     str->length += 1;
 }
 
+void string_reset(String* str) {
+    str->length = 0;
+}
+
 void string_print(const String str) {
 #ifdef __unix
 	write(1, str.buffer, str.length);
