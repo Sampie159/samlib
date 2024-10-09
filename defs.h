@@ -134,12 +134,12 @@ typedef struct {
 // given it will still allocate 4KB.
 Arena arena_new(u64 cap);
 void* arena_alloc(Arena* a, u64 size);
-void* arena_pop(Arena* arena, u64 size);
+void* arena_pop(Arena* a, u64 size);
 void  arena_reset(Arena* a);
 void  arena_clear(Arena* a);
 void  arena_free(Arena* a);
 
-ArenaTemp arena_temp_begin(Arena* arena);
+ArenaTemp arena_temp_begin(Arena* a);
 void      arena_temp_end(ArenaTemp temp);
 
 #define arena_default()     arena_new(DEFAULT_ARENA_SIZE)

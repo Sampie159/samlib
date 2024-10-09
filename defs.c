@@ -53,9 +53,9 @@ void* arena_alloc(Arena* a, u64 size) {
 	return ptr;
 }
 
-void* arena_pop(Arena* arena, u64 size) {
-    arena->pos -= size;
-    return (u8*)arena->buffer + arena->pos;
+void* arena_pop(Arena* a, u64 size) {
+    a->pos -= size;
+    return (u8*)a->buffer + a->pos;
 }
 
 void arena_reset(Arena* a) { a->pos = 0; }
@@ -77,10 +77,10 @@ void arena_free(Arena* a) {
 	a->com = 0;
 }
 
-ArenaTemp arena_temp_begin(Arena* arena) {
+ArenaTemp arena_temp_begin(Arena* a) {
 	return (ArenaTemp) {
-		.arena = arena,
-		.pos   = arena->pos,
+		.arena = a,
+		.pos   = a->pos,
 	};
 }
 
@@ -353,7 +353,7 @@ void string_reset(String* str) {
 
 char* string_to_cstr(String* str) {
     str->buffer[str->length] = 0;
-    return str->buffer;
+    return (char*)str->buffer;
 }
 
 void string_print(const String str) {
