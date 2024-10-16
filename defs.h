@@ -196,17 +196,20 @@ typedef struct {
     u64    len;
 
     const u64 type_size;
-} DynArray;
+} Array;
 
-DynArray dynarray_create(u64 type_size);
-void     dynarray_reserve(DynArray* da, u64 cap);
-void     dynarray_resize(DynArray* da, u64 new_cap);
-void     dynarray_push(DynArray* da, const void* val);
-void     dynarray_pushf(DynArray* da, const void* val);
+Array array_create(u64 type_size);
+void  array_reserve(Array* da, u64 cap);
+void  array_resize(Array* da, u64 new_cap);
+void  array_push(Array* da, const void* val);
+void  array_pushf(Array* da, const void* val);
+void  array_pop(Array* da);
+void  array_popf(Array* da);
 
-#define make_dynarray(T)      dynarray_create(sizeof(T))
-#define push_dynarray(da, v)  dynarray_push((da), (void*)(v))
-#define pushf_dynarray(da, v) dynarray_pushf((da), (void*)(v))
+#define make_array(T)     array_create(sizeof(T))
+#define push(da, v)       array_push((da), (void*)&(v))
+#define push_front(da, v) array_pushf((da), (void*)&(v))
+#define at(da, T, idx)    *(T*)(da)->data + (idx)
 
 #ifdef __cplusplus
 }
