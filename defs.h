@@ -222,9 +222,12 @@ void  array_pop(Array* da);
 void  array_popf(Array* da);
 
 #define make_array(T)     array_create(sizeof(T))
+
+#ifndef __cplusplus
 #define push(da, v)       array_push((da), (void*)&(v))
 #define push_front(da, v) array_pushf((da), (void*)&(v))
 #define at(da, T, idx)    *(T*)(da)->data + (idx)
+#endif
 
 #ifdef __cplusplus
 }

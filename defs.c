@@ -19,7 +19,7 @@
 #endif
 
 Arena arena_new(u64 cap) {
-	if (cap < KB(4)) cap = KB(4);
+    if (cap < KB(4)) cap = KB(4);
     return (Arena) {
 #ifdef __unix
 		.buffer = mmap(NULL, cap, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0),
