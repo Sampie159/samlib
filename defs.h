@@ -201,6 +201,31 @@ f64    string_to_f64(const String str);
 #define str_slice_end(str, init)  string_slice(str, init, str.length)
 #define str_slice_until(str, end) string_slice(str, 0, end)
 
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                               DYNAMIC ARRAY                               */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+typedef struct {
+    void*  data;
+    u64    cap;
+    u64    len;
+
+    const u64 type_size;
+} Array;
+
+Array array_create(u64 type_size);
+void  array_reserve(Array* da, u64 cap);
+void  array_resize(Array* da, u64 new_cap);
+void  array_push(Array* da, const void* val);
+void  array_pushf(Array* da, const void* val);
+void  array_pop(Array* da);
+void  array_popf(Array* da);
+
+#define make_array(T)     array_create(sizeof(T))
+#define push(da, v)       array_push((da), (void*)&(v))
+#define push_front(da, v) array_pushf((da), (void*)&(v))
+#define at(da, T, idx)    *(T*)(da)->data + (idx)
+
 #ifdef __cplusplus
 }
 #endif

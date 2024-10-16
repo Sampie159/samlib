@@ -9,6 +9,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdint.h>
 
 #ifdef __unix
 #include <sys/mman.h>
@@ -610,4 +611,63 @@ u64 string_to_u64(const String str) {
 	}
 
 	return result;
+}
+
+Array array_create(u64 type_size) {
+    Array da = {
+        .type_size = type_size,
+    };
+
+    return da;
+}
+
+void array_reserve(Array* da, u64 cap) {
+    da->data = malloc(cap * da->type_size);
+    da->cap = cap;
+}
+
+// void dynarray_reserve_arena(Array* da, Arena* a, u64 cap) {
+//     da->data = arena_alloc(a, cap * da->type_size);
+//     da->cap = cap;
+// }
+
+void array_resize(Array* da, u64 new_cap) {
+    da->data = realloc(da->data, new_cap * da->type_size);
+    da->cap = new_cap;
+}
+
+void array_push(Array* da, const void* val) {
+    if (da->len + 1 > da->cap) {
+        if (da->cap == 0) da->cap = 1;
+        array_resize(da, da->cap + da->cap);
+        OK("Resized!\n", NULL);
+    }
+    void* elem = da->data + da->type_size * da->len;
+    OK("Data is: %p\n", da->data);
+    OK("Elem is: %p\n", elem);
+    OK("Val is: %p\n", val);
+    memcpy(elem, val, da->type_size);
+    OK("Mem copied\n", NULL);
+    da->len += 1;
+}
+
+void array_pushf(Array* da, const void* val) {
+    if (da->len + 1 > da->cap) {
+        if (da->cap == 0) da->cap = 1;
+        array_resize(da, da->cap + da->cap);
+    }
+    memmove(da->data + da->type_size, da->data, da->len * da->type_size);
+    memcpy(da->data, val, da->type_size);
+    da->len += 1;
+}
+
+void array_pop(Array* da) {
+    if (da->len == 0) return;
+    da->len -= 1;
+}
+
+void array_popf(Array* da) {
+    if (da->len == 0) return;
+    da->len -= 1;
+    memmove(da->data, da->data + da->type_size, da->len);
 }
