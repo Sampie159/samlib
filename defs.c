@@ -641,7 +641,7 @@ void array_push(Array* da, const void* val) {
         if (da->cap == 0) da->cap = 1;
         array_resize(da, da->cap + da->cap);
     }
-    void* elem = da->data + da->type_size * da->len;
+    void* elem = (u8*)da->data + da->type_size * da->len;
     memcpy(elem, val, da->type_size);
     da->len += 1;
 }
@@ -651,7 +651,7 @@ void array_pushf(Array* da, const void* val) {
         if (da->cap == 0) da->cap = 1;
         array_resize(da, da->cap + da->cap);
     }
-    memmove(da->data + da->type_size, da->data, da->len * da->type_size);
+    memmove((u8*)da->data + da->type_size, da->data, da->len * da->type_size);
     memcpy(da->data, val, da->type_size);
     da->len += 1;
 }
@@ -670,8 +670,8 @@ void array_pushi(Array* da, const void* val, u64 idx) {
         return;
     }
 
-    memmove(da->data + ((idx + 1) * da->type_size), da->data + (idx * da->type_size), (da->len - idx) * da->type_size);
-    memcpy(da->data + (idx * da->type_size), val, da->type_size);
+    memmove((u8*)da->data + ((idx + 1) * da->type_size), (u8*)da->data + (idx * da->type_size), (da->len - idx) * da->type_size);
+    memcpy((u8*)da->data + (idx * da->type_size), val, da->type_size);
     da->len += 1;
 }
 
@@ -683,12 +683,12 @@ void array_pop(Array* da) {
 void array_popf(Array* da) {
     if (da->len == 0) return;
     da->len -= 1;
-    memmove(da->data, da->data + da->type_size, da->len * da->type_size);
+    memmove(da->data, (u8*)da->data + da->type_size, da->len * da->type_size);
 }
 
 void array_popi(Array* da, u64 idx) {
     if (da->len == 0) return;
-    memmove(da->data + (idx * da->type_size), da->data + ((idx + 1) * da->type_size), (da->len - idx) * da->type_size);
+    memmove((u8*)da->data + (idx * da->type_size), (u8*)da->data + ((idx + 1) * da->type_size), (da->len - idx) * da->type_size);
     da->len -= 1;
 }
 
