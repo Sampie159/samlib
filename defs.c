@@ -622,6 +622,7 @@ void array_pushi(Array* da, const void* val, u64 idx) {
 
     memmove(da->data + ((idx + 1) * da->type_size), da->data + (idx * da->type_size), (da->len - idx) * da->type_size);
     memcpy(da->data + (idx * da->type_size), val, da->type_size);
+    da->len += 1;
 }
 
 void array_pop(Array* da) {

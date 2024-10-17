@@ -214,7 +214,7 @@ void  array_destroy(Array* da);
 #define push(da, v)          array_push((da), (void*)&(v))
 #define push_front(da, v)    array_pushf((da), (void*)&(v))
 #define push_idx(da, v, idx) array_pushi((da), (void*)&(v), idx)
-#define at(da, T, idx)       *(T*)(da)->data + (idx)
+#define at(da, T, idx)       *((T*)(da)->data + (idx))
 
 #ifdef __cplusplus
 }
