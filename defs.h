@@ -218,16 +218,19 @@ void  array_reserve(Array* da, u64 cap);
 void  array_resize(Array* da, u64 new_cap);
 void  array_push(Array* da, const void* val);
 void  array_pushf(Array* da, const void* val);
+void  array_pushi(Array* da, const void* val, u64 idx);
 void  array_pop(Array* da);
 void  array_popf(Array* da);
+void  array_popi(Array* da, u64 idx);
+void  array_clear(Array* da);
+void  array_destroy(Array* da);
 
-#define make_array(T)     array_create(sizeof(T))
-
-#ifndef __cplusplus
-#define push(da, v)       array_push((da), (void*)&(v))
-#define push_front(da, v) array_pushf((da), (void*)&(v))
-#define at(da, T, idx)    *(T*)(da)->data + (idx)
-#endif
+#define make_array(T)        array_create(sizeof(T))
+#define push(da, v)          array_push((da), (void*)&(v))
+#define push_front(da, v)    array_pushf((da), (void*)&(v))
+#define push_idx(da, v, idx) array_pushi((da), (void*)&(v), idx)
+#define at(da, T, idx)       *((T*)(da)->data + (idx))
+#define at_ref(da, T, idx)   ((T*)(da)->data + (idx))
 
 #ifdef __cplusplus
 }
