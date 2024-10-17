@@ -590,14 +590,9 @@ void array_push(Array* da, const void* val) {
     if (da->len + 1 > da->cap) {
         if (da->cap == 0) da->cap = 1;
         array_resize(da, da->cap + da->cap);
-        OK("Resized!\n", NULL);
     }
     void* elem = da->data + da->type_size * da->len;
-    OK("Data is: %p\n", da->data);
-    OK("Elem is: %p\n", elem);
-    OK("Val is: %p\n", val);
     memcpy(elem, val, da->type_size);
-    OK("Mem copied\n", NULL);
     da->len += 1;
 }
 
@@ -611,6 +606,24 @@ void array_pushf(Array* da, const void* val) {
     da->len += 1;
 }
 
+void array_pushi(Array* da, const void* val, u64 idx) {
+    if (da->len + 1 > da->cap) {
+        if (da->cap == 0) da->cap = 1;
+        array_resize(da, da->cap + da->cap);
+    }
+    if (idx == 0) {
+        push_front(da, val);
+        return;
+    }
+    if (idx == da->len) {
+        push(da, val);
+        return;
+    }
+
+    memmove(da->data + ((idx + 1) * da->type_size), da->data + (idx * da->type_size), (da->len - idx) * da->type_size);
+    memcpy(da->data + (idx * da->type_size), val, da->type_size);
+}
+
 void array_pop(Array* da) {
     if (da->len == 0) return;
     da->len -= 1;
@@ -619,5 +632,22 @@ void array_pop(Array* da) {
 void array_popf(Array* da) {
     if (da->len == 0) return;
     da->len -= 1;
-    memmove(da->data, da->data + da->type_size, da->len);
+    memmove(da->data, da->data + da->type_size, da->len * da->type_size);
+}
+
+void array_popi(Array* da, u64 idx) {
+    if (da->len == 0) return;
+    memmove(da->data + (idx * da->type_size), da->data + ((idx + 1) * da->type_size), (da->len - idx) * da->type_size);
+    da->len -= 1;
+}
+
+void array_clear(Array* da) {
+    da->len = 0;
+}
+
+void array_destroy(Array* da) {
+    free(da->data);
+    da->data = NULL;
+    da->len = 0;
+    da->cap = 0;
 }
