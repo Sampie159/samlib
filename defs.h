@@ -205,6 +205,8 @@ f64    string_to_f64(const String str);
 /*                               DYNAMIC ARRAY                               */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#ifndef __cplusplus
+
 typedef struct {
     void*  data;
     u64    cap;
@@ -231,6 +233,8 @@ void  array_destroy(Array* da);
 #define push_idx(da, v, idx) array_pushi((da), (void*)&(v), idx)
 #define at(da, T, idx)       *((T*)(da)->data + (idx))
 #define at_ref(da, T, idx)   ((T*)(da)->data + (idx))
+
+#endif
 
 #ifdef __cplusplus
 }
