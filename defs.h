@@ -1,5 +1,4 @@
-#ifndef _DEFS_H_
-#define _DEFS_H_
+#if !defined(_DEFS_H_)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,16 +7,16 @@
 /*                                   DEBUG                                   */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef NDEBUG
-#define TODO(format, ...)  fprintf(stderr, "\033[1m[TODO] \033[0m" format __VA_OPT__(, ) __VA_ARGS__)
-#define WARN(format, ...)  fprintf(stderr, "\033[1;33m[WARNING] \033[0m" format __VA_OPT__(, ) __VA_ARGS__)
-#define ERR(format, ...)   fprintf(stderr, "\033[1;31m[ERROR] \033[0m" format __VA_OPT__(, ) __VA_ARGS__)
-#define OK(format, ...)    fprintf(stderr, "\033[1;32m[OK] \033[0m" format __VA_OPT__(, ) __VA_ARGS__)
+#if !defined(NDEBUG)
+    #define TODO(format, ...)  fprintf(stderr, "\033[1m[TODO] \033[0m" format __VA_OPT__(, ) __VA_ARGS__)
+    #define WARN(format, ...)  fprintf(stderr, "\033[1;33m[WARNING] \033[0m" format __VA_OPT__(, ) __VA_ARGS__)
+    #define ERR(format, ...)   fprintf(stderr, "\033[1;31m[ERROR] \033[0m" format __VA_OPT__(, ) __VA_ARGS__)
+    #define OK(format, ...)    fprintf(stderr, "\033[1;32m[OK] \033[0m" format __VA_OPT__(, ) __VA_ARGS__)
 #else
-#define TODO(format, ...)
-#define WARN(format, ...)
-#define ERR(format, ...)
-#define OK(format, ...)
+    #define TODO(format, ...)
+    #define WARN(format, ...)
+    #define ERR(format, ...)
+    #define OK(format, ...)
 #endif
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -30,10 +29,10 @@
 #define ALL32 0xffffffff
 #define ALL64 0xffffffffffffffff
 
-#ifdef __unix
-#define INLINE __attribute__((always_inline)) inline
+#if defined(__unix)
+    #define INLINE __attribute__((always_inline)) inline
 #else
-#define INLINE __forceinline
+    #define INLINE __forceinline
 #endif
 
 #define LEN(arr)           sizeof(arr) / sizeof(arr[0])
@@ -46,18 +45,14 @@
     exit(EXIT_FAILURE);                                                             \
 } while (0)
 
-#ifndef __cplusplus
-#if !(__STDC_VERSION__ > 201710)
-#define true  1
-#define false 0
-#endif
-
-typedef char* string;
-
+#if !defined(__cplusplus)
+    #if !(__STDC_VERSION__ > 201710)
+        #define true  1
+        #define false 0
+    #endif
+    typedef char* string;
 #else
-
-#define restrict __restrict
-
+    #define restrict __restrict
 #endif
 
 #define func    static
@@ -102,7 +97,7 @@ global const f64 MAX_F64 = 1.79769313486231e+308;
 
 global const f32 PI = 3.14159265359f;
 
-#ifdef __cplusplus
+#if defined(__cplusplus)
 extern "C" {
 #endif
 
@@ -205,7 +200,7 @@ f64    string_to_f64(const String str);
 /*                               DYNAMIC ARRAY                               */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef __cplusplus
+#if !defined(__cplusplus)
 
 typedef struct {
     void*  data;
@@ -236,8 +231,9 @@ void  array_destroy(Array* da);
 
 #endif
 
-#ifdef __cplusplus
+#if defined(__cplusplus)
 }
 #endif
 
+#define _DEFS_H_
 #endif  // _DEFS_H_

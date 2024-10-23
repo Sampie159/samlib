@@ -11,17 +11,17 @@
 #include <stdarg.h>
 #include <stdint.h>
 
-#ifdef __unix
-#include <sys/mman.h>
-#include <unistd.h>
+#if defined(__unix)
+    #include <sys/mman.h>
+    #include <unistd.h>
 #else
-#include <windows.h>
+    #include <windows.h>
 #endif
 
 Arena arena_new(u64 cap) {
     if (cap < KB(4)) cap = KB(4);
     return (Arena) {
-#ifdef __unix
+#if defined(__unix)
 		.buffer = mmap(NULL, cap, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0),
 #else
 		.buffer = VirtualAlloc(NULL, cap, MEM_RESERVE, PAGE_READWRITE),
@@ -40,7 +40,7 @@ void* arena_alloc(Arena* a, u64 size) {
 		u64 size_to_commit = (u64)div;
 		if (div > (f64)size_to_commit) size_to_commit += 1;
 		size_to_commit *= KB(4);
-#ifdef __unix
+#if defined(__unix)
 		const s32 prot = PROT_READ | PROT_WRITE;
 		const s32 flags = MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS;
 		mmap((char*)a->buffer + a->com, size_to_commit, prot, flags, -1, 0);
@@ -67,7 +67,7 @@ void arena_clear(Arena* a) {
 }
 
 void arena_free(Arena* a) {
-#ifdef __unix
+#if defined(__unix)
 	munmap(a->buffer, a->cap);
 #else
 	VirtualFree(a->buffer, 0, MEM_RELEASE);
@@ -358,7 +358,7 @@ char* string_to_cstr(String* str) {
 }
 
 void string_print(const String str) {
-#ifdef __unix
+#if defined(__unix)
 	write(1, str.buffer, str.length);
 #else
 	HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -367,7 +367,7 @@ void string_print(const String str) {
 }
 
 void string_println(const String str) {
-#ifdef __unix
+#if defined(__unix)
     write(1, str.buffer, str.length);
     write(1, "\n", 1);
 #else
@@ -378,7 +378,7 @@ void string_println(const String str) {
 }
 
 void string_eprint(const String str) {
-#ifdef __unix
+#if defined(__unix)
 	write(2, str.buffer, str.length);
 #else
 	HANDLE handle = GetStdHandle(STD_ERROR_HANDLE);
@@ -387,7 +387,7 @@ void string_eprint(const String str) {
 }
 
 void string_eprintln(const String str) {
-#ifdef __unix
+#if defined(__unix)
     write(2, str.buffer, str.length);
     write(2, "\n", 1);
 #else
