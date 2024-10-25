@@ -1,18 +1,18 @@
 cmake_minimum_required(VERSION 3.28)
-project(defs C)
+project(samlib LANGUAGES C)
 
 add_library(
-	defs
-	defs.c
+	samlib
+	samlib.c
 )
 
 set_target_properties(
-    defs PROPERTIES
-    PUBLIC_HEADER defs.h
+    samlib PROPERTIES
+    PUBLIC_HEADER samlib.h
 )
 
 target_include_directories(
-    defs
+    samlib
     PUBLIC
     "./"
 )

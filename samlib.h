@@ -1,4 +1,4 @@
-#if !defined(_DEFS_H_)
+#if !defined(_SAMLIB_H_)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -235,5 +235,5 @@ void  array_destroy(Array* da);
 }
 #endif
 
-#define _DEFS_H_
-#endif  // _DEFS_H_
+#define _SAMLIB_H_
+#endif  // _SAMLIB_H_
