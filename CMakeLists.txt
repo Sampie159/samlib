@@ -16,6 +16,14 @@ set_target_properties(
     PUBLIC_HEADER samlib.h
 )
 
+if (NOT CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+    target_link_libraries(
+        samlib
+        PRIVATE
+        m
+    )
+endif ()
+
 target_include_directories(
     samlib
     PUBLIC

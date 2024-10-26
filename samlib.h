@@ -291,6 +291,9 @@ f32  vec4_length_sq(Vec4 vec);
 
 #endif
 
+f32 square(f32 val);
+f32 root(f32 val);
+
 #if defined(__cplusplus)
 }
 

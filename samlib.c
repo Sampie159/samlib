@@ -927,3 +927,17 @@ f32 vec4_dot(Vec4 a, Vec4 b) {
 f32 vec4_length_sq(Vec4 vec) {
     return vec4_dot(vec, vec);
 }
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                  NUMBERS                                  */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+#include <math.h>
+
+f32 square(f32 val) {
+    return val * val;
+}
+
+f32 root(f32 val) {
+    return sqrtf(val);
+}
