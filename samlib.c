@@ -707,6 +707,10 @@ void array_destroy(Array* da) {
 /*                                   MATH                                    */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                   VEC2                                    */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
 Vec2 vec2_addvec(Vec2 a, Vec2 b) {
     Vec2 res;
     res.x = a.x + b.x;
@@ -757,6 +761,20 @@ b8 vec2_eq(Vec2 a, Vec2 b) {
 void vec2_clamp(Vec2* vec, Vec2 min, Vec2 max) {
     CLAMP(vec->x, min.x, max.x);
     CLAMP(vec->y, min.y, max.y);
+}
+
+f32 vec2_square(Vec2 vec) {
+    f32 res = vec.x * vec.x;
+    return res;
+}
+
+f32 vec2_dot(Vec2 a, Vec2 b) {
+    f32 res = a.x * b.x + a.y * b.y;
+    return res;
+}
+
+f32 vec2_length_sq(Vec2 vec) {
+    return vec2_dot(vec, vec);
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -820,6 +838,15 @@ void vec3_clamp(Vec3* vec, Vec3 min, Vec3 max) {
     CLAMP(vec->x, min.x, max.x);
     CLAMP(vec->y, min.y, max.y);
     CLAMP(vec->z, min.z, max.z);
+}
+
+f32 vec3_dot(Vec3 a, Vec3 b) {
+    f32 res = a.x * b.x + a.y * b.y + a.z * b.z;
+    return res;
+}
+
+f32 vec3_length_sq(Vec3 vec) {
+    return vec3_dot(vec, vec);
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -890,4 +917,13 @@ void vec4_clamp(Vec4* vec, Vec4 min, Vec4 max) {
     CLAMP(vec->y, min.y, max.y);
     CLAMP(vec->z, min.z, max.z);
     CLAMP(vec->w, min.w, max.w);
+}
+
+f32 vec4_dot(Vec4 a, Vec4 b) {
+    f32 res = a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+    return res;
+}
+
+f32 vec4_length_sq(Vec4 vec) {
+    return vec4_dot(vec, vec);
 }

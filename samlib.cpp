@@ -1,6 +1,10 @@
 #include "samlib.h"
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                   MATH                                    */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                   VEC2                                    */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
@@ -83,6 +87,15 @@ bool operator!=(Vec2 a, Vec2 b) {
 void clamp(Vec2& vec, Vec2 min, Vec2 max) {
     CLAMP(vec.x, min.x, max.x);
     CLAMP(vec.y, min.y, max.y);
+}
+
+f32 dot(Vec2 a, Vec2 b) {
+    f32 res = a.x * b.x + a.y * b.y;
+    return res;
+}
+
+f32 length_sq(Vec2 vec) {
+    return dot(vec, vec);
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -175,6 +188,15 @@ void clamp(Vec3& vec, Vec3 min, Vec3 max) {
     CLAMP(vec.x, min.x, max.x);
     CLAMP(vec.y, min.y, max.y);
     CLAMP(vec.z, min.z, max.z);
+}
+
+f32 dot(Vec3 a, Vec3 b) {
+    f32 res = a.x * b.x + a.y * b.y + a.z * b.z;
+    return res;
+}
+
+f32 length_sq(Vec3 vec) {
+    return dot(vec, vec);
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -274,4 +296,13 @@ void clamp(Vec4& vec, Vec4 min, Vec4 max) {
     CLAMP(vec.y, min.y, max.y);
     CLAMP(vec.z, min.z, max.z);
     CLAMP(vec.w, min.w, max.w);
+}
+
+f32 dot(Vec4 a, Vec4 b) {
+    f32 res = a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+    return res;
+}
+
+f32 length_sq(Vec4 vec) {
+    return dot(vec, vec);
 }
