@@ -773,6 +773,12 @@ f32 vec2_dot(Vec2 a, Vec2 b) {
     return res;
 }
 
+f32 vec2_length(Vec2 vec) {
+    f32 res = vec2_length_sq(vec);
+    res = root(res);
+    return res;
+}
+
 f32 vec2_length_sq(Vec2 vec) {
     return vec2_dot(vec, vec);
 }
@@ -842,6 +848,12 @@ void vec3_clamp(Vec3* vec, Vec3 min, Vec3 max) {
 
 f32 vec3_dot(Vec3 a, Vec3 b) {
     f32 res = a.x * b.x + a.y * b.y + a.z * b.z;
+    return res;
+}
+
+f32 vec3_length(Vec3 vec) {
+    f32 res = vec3_length_sq(vec);
+    res = root(res);
     return res;
 }
 
@@ -921,6 +933,12 @@ void vec4_clamp(Vec4* vec, Vec4 min, Vec4 max) {
 
 f32 vec4_dot(Vec4 a, Vec4 b) {
     f32 res = a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+    return res;
+}
+
+f32 vec4_length(Vec4 vec) {
+    f32 res = vec4_length_sq(vec);
+    res = root(res);
     return res;
 }
 

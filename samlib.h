@@ -265,6 +265,7 @@ b8   vec2_eq(Vec2 a, Vec2 b);
 void vec2_clamp(Vec2* vec, Vec2 min, Vec2 max);
 f32  vec2_square(Vec2 vec);
 f32  vec2_dot(Vec2 a, Vec2 b);
+f32  vec2_length(Vec2 vec);
 f32  vec2_length_sq(Vec2 vec);
 
 Vec3 vec3_addvec(Vec3 a, Vec3 b);
@@ -276,6 +277,7 @@ Vec3 vec3_div(Vec3 a, f32 scalar);
 b8   vec3_eq(Vec3 a, Vec3 b);
 void vec3_clamp(Vec3* vec, Vec3 min, Vec3 max);
 f32  vec3_dot(Vec3 a, Vec3 b);
+f32  vec3_length(Vec3 vec);
 f32  vec3_length_sq(Vec3 vec);
 
 Vec4 vec4_addvec(Vec4 a, Vec4 b);
@@ -287,6 +289,7 @@ Vec4 vec4_div(Vec4 a, f32 scalar);
 b8   vec4_eq(Vec4 a, Vec4 b);
 void vec4_clamp(Vec4* vec, Vec4 min, Vec4 max);
 f32  vec4_dot(Vec4 a, Vec4 b);
+f32  vec4_length(Vec4 vec);
 f32  vec4_length_sq(Vec4 vec);
 
 #endif
@@ -313,6 +316,7 @@ bool operator==(Vec2 a, Vec2 b);
 bool operator!=(Vec2 a, Vec2 b);
 void clamp(Vec2& vec, Vec2 min, Vec2 max);
 f32  dot(Vec2 a, Vec2 b);
+f32  length(Vec2 vec);
 f32  length_sq(Vec2 vec);
 
 Vec3 operator+(Vec3 a, Vec3 b);
@@ -331,6 +335,7 @@ bool operator==(Vec3 a, Vec3 b);
 bool operator!=(Vec3 a, Vec3 b);
 void clamp(Vec3& vec, Vec3 min, Vec3 max);
 f32  dot(Vec3 a, Vec3 b);
+f32  length(Vec3 vec);
 f32  length_sq(Vec3 vec);
 
 Vec4 operator+(Vec4 a, Vec4 b);
@@ -349,6 +354,7 @@ bool operator==(Vec4 a, Vec4 b);
 bool operator!=(Vec4 a, Vec4 b);
 void clamp(Vec4& vec, Vec4 min, Vec4 max);
 f32  dot(Vec4 a, Vec4 b);
+f32  length(Vec4 vec);
 f32  length_sq(Vec4 vec);
 
 #endif
