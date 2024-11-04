@@ -1,15 +1,11 @@
 cmake_minimum_required(VERSION 3.28)
-project(samlib LANGUAGES C)
+project(samlib LANGUAGES C CXX)
 
 add_library(
 	samlib
 	samlib.c
+    samlib.cpp
 )
-
-if (CMAKE_CXX_COMPILER)
-    enable_language(CXX)
-    target_sources(samlib PRIVATE samlib.cpp)
-endif ()
 
 set_target_properties(
     samlib PROPERTIES
