@@ -235,22 +235,31 @@ void  array_destroy(Array* da);
 /*                                   MATH                                    */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-typedef struct {
-    f32 x;
-    f32 y;
+typedef union {
+    struct {
+        f32 x, y;
+    };
+    f32 e[2];
 } Vec2;
 
-typedef struct {
-    f32 x;
-    f32 y;
-    f32 z;
+typedef union {
+    struct {
+        f32 x, y, z;
+    };
+    struct {
+        f32 r, g, b;
+    };
+    f32 e[3];
 } Vec3;
 
-typedef struct {
-    f32 x;
-    f32 y;
-    f32 z;
-    f32 w;
+typedef union {
+    struct {
+        f32 x, y, z, w;
+    };
+    struct {
+        f32 r, g, b, a;
+    };
+    f32 e[4];
 } Vec4;
 
 #if !defined(__cplusplus)
