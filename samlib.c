@@ -4,12 +4,7 @@
 /*                                 INCLUDES                                  */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stddef.h>
 #include <string.h>
-#include <stdarg.h>
-#include <stdint.h>
 
 #if defined(__unix)
     #include <sys/mman.h>
@@ -35,7 +30,6 @@ Arena arena_new(u64 cap) {
 void* arena_alloc(Arena* a, u64 size) {
 	if (a->pos + size > a->cap) return NULL;
 	if (a->pos + size > a->com) {
-		// TODO(sampie): Test this shit.
 		f64 div =  (f64)size/(f64)KB(4);
 		u64 size_to_commit = (u64)div;
 		if (div > (f64)size_to_commit) size_to_commit += 1;
@@ -43,13 +37,13 @@ void* arena_alloc(Arena* a, u64 size) {
 #if defined(__unix)
 		const s32 prot = PROT_READ | PROT_WRITE;
 		const s32 flags = MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS;
-		mmap((char*)a->buffer + a->com, size_to_commit, prot, flags, -1, 0);
+		mmap((u8*)a->buffer + a->com, size_to_commit, prot, flags, -1, 0);
 #else
-		VirtualAlloc((char*)a->buffer + a->com, size_to_commit, MEM_COMMIT, PAGE_READWRITE);
+		VirtualAlloc((u8*)a->buffer + a->com, size_to_commit, MEM_COMMIT, PAGE_READWRITE);
 #endif
 		a->com += size_to_commit;
 	}
-	void* ptr = (char*)a->buffer + a->pos;
+	void* ptr = (u8*)a->buffer + a->pos;
 	a->pos += size;
 	return ptr;
 }
@@ -341,6 +335,11 @@ void string_write_ptr(String* str, const void* ptr) {
         val /= 10;
     }
     str->length += length;
+}
+
+void string_null(String* str) {
+    str->buffer[str->length] = 0;
+    str->length += 1;
 }
 
 void string_newline(String* str) {

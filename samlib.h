@@ -55,7 +55,7 @@
     #define restrict __restrict
 #endif
 
-#define func    static
+#define local   static
 #define global  static
 #define persist static
 
@@ -125,7 +125,7 @@ typedef struct {
 	u64    pos;
 } ArenaTemp;
 
-// Create a new `Arena` of size `size`. Minimum size is 4KB, if a smaller size is
+// Create a new `Arena` of size `cap`. Minimum size is 4KB, if a smaller size is
 // given it will still allocate 4KB.
 Arena arena_new(u64 cap);
 void* arena_alloc(Arena* a, u64 size);
@@ -165,6 +165,7 @@ void   string_write_u64(String* str, u64 val);
 void   string_write_f32(String* str, f32 val);
 void   string_write_f64(String* str, f64 val);
 void   string_write_ptr(String* str, const void* ptr);
+void   string_null(String* str);
 void   string_newline(String* str);
 void   string_reset(String* str);
 char*  string_to_cstr(String* str);
