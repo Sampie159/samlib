@@ -396,7 +396,6 @@ void string_eprintln(const String str) {
 #endif
 }
 
-
 String string_concat(Arena* arena, const String str1, const String str2) {
 	u64 new_length = str1.length + str2.length;
 	u8* new_str = push_array(arena, u8, new_length);
