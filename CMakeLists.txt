@@ -12,7 +12,7 @@ set_target_properties(
     PUBLIC_HEADER samlib.h
 )
 
-if (NOT CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+if (NOT WIN32)
     target_link_libraries(
         samlib
         PRIVATE

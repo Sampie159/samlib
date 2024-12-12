@@ -72,14 +72,14 @@ void arena_free(Arena* a) {
 	a->com = 0;
 }
 
-ArenaTemp arena_temp_begin(Arena* a) {
-	return (ArenaTemp) {
+TempArena temp_arena_begin(Arena* a) {
+	return (TempArena) {
 		.arena = a,
 		.pos   = a->pos,
 	};
 }
 
-void arena_temp_end(ArenaTemp temp) {
+void temp_arena_end(TempArena temp) {
 	temp.arena->pos = temp.pos;
 }
 

@@ -4,24 +4,6 @@
 #include <stdlib.h>
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-/*                                   DEBUG                                   */
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
-#if !defined(NDEBUG)
-    #define TODO(format, ...)  fprintf(stderr, "\033[1m[TODO] \033[0m" format __VA_OPT__(, ) __VA_ARGS__)
-    #define WARN(format, ...)  fprintf(stderr, "\033[1;33m[WARNING] \033[0m" format __VA_OPT__(, ) __VA_ARGS__)
-    #define ERR(format, ...)   fprintf(stderr, "\033[1;31m[ERROR] \033[0m" format __VA_OPT__(, ) __VA_ARGS__)
-    #define OK(format, ...)    fprintf(stderr, "\033[1;32m[OK] \033[0m" format __VA_OPT__(, ) __VA_ARGS__)
-    #define DEBUG(stmt) stmt
-#else
-    #define TODO(format, ...)
-    #define WARN(format, ...)
-    #define ERR(format, ...)
-    #define OK(format, ...)
-    #define DEBUG(stmt)
-#endif
-
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                  GENERAL                                  */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
@@ -44,15 +26,15 @@
 #define UNIMPLEMENTED()    fprintf(stderr, "\033[1m[TODO] \033[0m%s is unimplemented!\n", __FUNCTION__)
 #define PANIC(format, ...) do {                                                     \
     fprintf(stderr, "\033[1;31m[PANIC] \033[0m" format __VA_OPT__(, ) __VA_ARGS__);	\
+    __builtin_trap();                                                               \
     exit(EXIT_FAILURE);                                                             \
 } while (0)
 
 #if !defined(__cplusplus)
-    #if !(__STDC_VERSION__ > 201710)
+    #if (__STDC_VERSION__ < 202311)
         #define true  1
         #define false 0
     #endif
-    typedef char* string;
 #else
     #define restrict __restrict
 #endif
@@ -99,6 +81,34 @@ global const f64 MAX_F64 = 1.79769313486231e+308;
 
 global const f32 PI = 3.14159265359f;
 
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                   DEBUG                                   */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+#if !defined(NDEBUG)
+    #define TODO(format, ...)  fprintf(stderr, "\033[1m[TODO] \033[0m" format __VA_OPT__(, ) __VA_ARGS__)
+    #define WARN(format, ...)  fprintf(stderr, "\033[1;33m[WARNING] \033[0m" format __VA_OPT__(, ) __VA_ARGS__)
+    #define ERR(format, ...)   fprintf(stderr, "\033[1;31m[ERROR] \033[0m" format __VA_OPT__(, ) __VA_ARGS__)
+    #define OK(format, ...)    fprintf(stderr, "\033[1;32m[OK] \033[0m" format __VA_OPT__(, ) __VA_ARGS__)
+    #define DEBUG if (1)
+    #define ASSERT(cond)                                                                          \
+        do {                                                                                      \
+            if (!(cond)) PANIC("Assertion failed: %s\nfile: %s:%d\n", #cond, __FILE__, __LINE__); \
+        } while (0)
+    #define ASSERTF(cond, format, ...)                             \
+        do {                                                       \
+            if (!(cond)) PANIC(format __VA_OPT__(, ) __VA_ARGS__); \
+        } while (0)
+#else
+    #define TODO(format, ...)
+    #define WARN(format, ...)
+    #define ERR(format, ...)
+    #define OK(format, ...)
+    #define DEBUG if (0)
+    #define ASSERT(cond)
+    #define ASSERTF(cond, format, ...)
+#endif
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -125,7 +135,7 @@ typedef struct {
 typedef struct {
 	Arena* arena;
 	u64    pos;
-} ArenaTemp;
+} TempArena;
 
 // Create a new `Arena` of size `cap`. Minimum size is 4KB, if a smaller size is
 // given it will still allocate 4KB.
@@ -136,8 +146,8 @@ void  arena_reset(Arena* a);
 void  arena_clear(Arena* a);
 void  arena_free(Arena* a);
 
-ArenaTemp arena_temp_begin(Arena* a);
-void      arena_temp_end(ArenaTemp temp);
+TempArena temp_arena_begin(Arena* a);
+void      temp_arena_end(TempArena temp);
 
 #define arena_default()     arena_new(DEFAULT_ARENA_SIZE)
 #define push_array(a, T, c) (T*)arena_alloc((a), sizeof(T) * (c))
