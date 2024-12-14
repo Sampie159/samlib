@@ -13,10 +13,12 @@
 #define ALL32 0xffffffff
 #define ALL64 0xffffffffffffffff
 
-#if defined(__unix)
-    #define INLINE __attribute__((always_inline)) inline
-#else
+#if defined(_WIN32)
     #define INLINE __forceinline
+    #define SAMAPI __declspec(dllexport)
+#else
+    #define INLINE __attribute__((always_inline)) inline
+    #define SAMAPI
 #endif
 
 #define LEN(arr)           sizeof(arr) / sizeof(arr[0])
