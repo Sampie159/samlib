@@ -17,34 +17,23 @@ Arena arena_new(u64 cap) {
     if (cap < KB(4)) cap = KB(4);
     return (Arena) {
 #if defined(__unix)
-		.buffer = mmap(NULL, cap, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0),
+		.buffer = mmap(NULL, cap, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0),
 #else
-		.buffer = VirtualAlloc(NULL, cap, MEM_RESERVE, PAGE_READWRITE),
+		.buffer = VirtualAlloc(NULL, cap, MEM_COMMIT, PAGE_READWRITE),
 #endif
 		.pos = 0,
 		.cap = cap,
-		.com = 0,
 	};
 }
 
-void* arena_alloc(Arena* a, u64 size) {
-	if (a->pos + size > a->cap) return NULL;
-	if (a->pos + size > a->com) {
-		f64 div =  (f64)size/(f64)KB(4);
-		u64 size_to_commit = (u64)div;
-		if (div > (f64)size_to_commit) size_to_commit += 1;
-		size_to_commit *= KB(4);
-#if defined(__unix)
-		const s32 prot = PROT_READ | PROT_WRITE;
-		const s32 flags = MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS;
-		mmap((u8*)a->buffer + a->com, size_to_commit, prot, flags, -1, 0);
-#else
-		VirtualAlloc((u8*)a->buffer + a->com, size_to_commit, MEM_COMMIT, PAGE_READWRITE);
-#endif
-		a->com += size_to_commit;
-	}
-	void* ptr = (u8*)a->buffer + a->pos;
-	a->pos += size;
+void* arena_alloc(Arena* a, u64 size, u64 alignment) {
+	void* unaligned_ptr = (u8*)a->buffer + a->pos;
+    void* ptr = (void*)(alignment * (((u64)unaligned_ptr + alignment - 1) / alignment));
+
+    u64 end = (u64)ptr - (u64)a->buffer + size;
+    if (end > a->cap) return NULL;
+	a->pos = end;
+
 	return ptr;
 }
 
@@ -69,7 +58,6 @@ void arena_free(Arena* a) {
 	a->buffer = NULL;
 	a->cap = 0;
 	a->pos = 0;
-	a->com = 0;
 }
 
 TempArena temp_arena_begin(Arena* a) {

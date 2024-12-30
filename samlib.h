@@ -36,6 +36,7 @@
     #if (__STDC_VERSION__ < 202311)
         #define true  1
         #define false 0
+        #define alignof _Alignof
     #endif
 #else
     #define restrict __restrict
@@ -131,7 +132,6 @@ typedef struct {
 	void* buffer;
 	u64   pos;
 	u64   cap;
-	u64   com;
 } Arena;
 
 typedef struct {
@@ -142,7 +142,7 @@ typedef struct {
 // Create a new `Arena` of size `cap`. Minimum size is 4KB, if a smaller size is
 // given it will still allocate 4KB.
 Arena arena_new(u64 cap);
-void* arena_alloc(Arena* a, u64 size);
+void* arena_alloc(Arena* a, u64 size, u64 alignment);
 void* arena_pop(Arena* a, u64 size);
 void  arena_reset(Arena* a);
 void  arena_clear(Arena* a);
@@ -152,8 +152,8 @@ TempArena temp_arena_begin(Arena* a);
 void      temp_arena_end(TempArena temp);
 
 #define arena_default()     arena_new(DEFAULT_ARENA_SIZE)
-#define push_array(a, T, c) (T*)arena_alloc((a), sizeof(T) * (c))
-#define push_type(a, T)     (T*)arena_alloc((a), sizeof(T))
+#define push_array(a, T, c) (T*)arena_alloc((a), sizeof(T) * (c), alignof(T))
+#define push_type(a, T)     (T*)arena_alloc((a), sizeof(T), alignof(T))
 #define pop_type(a, T)      (T*)arena_pop((a), sizeof(T))
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
